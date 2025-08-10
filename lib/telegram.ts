@@ -1,4 +1,4 @@
-import crypto from "crypto"
+import { createHmac } from "node:crypto"
 
 export function getTelegramApiBase() {
   const token = process.env.TELEGRAM_BOT_TOKEN
@@ -39,8 +39,8 @@ export function verifyInitData(initData: string) {
   const dataCheckString = pairs.join("\n")
 
   // secret_key = HMAC_SHA256("WebAppData", bot_token)
-  const secretKey = crypto.createHmac("sha256", "WebAppData").update(token).digest()
-  const calcHash = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex")
+  const secretKey = createHmac("sha256", "WebAppData").update(token).digest()
+  const calcHash = createHmac("sha256", secretKey).update(dataCheckString).digest("hex")
 
   if (calcHash !== hash) return null
 
@@ -60,7 +60,7 @@ export function verifyInitData(initData: string) {
 }
 
 export function getPublicBaseUrlFromRequest(req: Request) {
-  const proto = "https" // Vercel/Prod uses HTTPS for Telegram callbacks
+  const proto = "https"
   const host = (req.headers.get("x-forwarded-host") || req.headers.get("host") || "").toString()
   return `${proto}://${host}`
 }
