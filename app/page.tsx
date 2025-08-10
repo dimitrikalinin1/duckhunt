@@ -1,50 +1,40 @@
 "use client"
 
+import { useCallback, useEffect, useMemo, useState } from "react"
 import Image from "next/image"
-import { useCallback, useMemo, useState } from "react"
-import { Badge } from "@/components/ui/badge"
+import { LEVELS, type LevelKey, type LevelRules, gridSize } from "@/lib/game-config"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Info, RotateCcw, Target, TelescopeIcon as Binoculars, MoveRight } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { RotateCcw, Target, Telescope, MoveRight, ShoppingBag, Zap, Shield, CloudRain } from "lucide-react"
 import { cn } from "@/lib/utils"
+import SceneBackground from "@/components/scene-background"
+import AppHeader from "@/components/app-header"
+import FeatherBurst from "@/components/feather-burst"
+import GameBoard, { type CellOverlay } from "@/components/game-board"
+import { useSound } from "@/hooks/use-sound"
 
+// Types
 type Turn = "pre-bets" | "duck-initial" | "hunter" | "duck" | "ended"
+type EndReason =
+  | "hunter-shot-duck"
+  | "hunter-hit-beaver"
+  | "duck-hit-beaver"
+  | "hunter-out-of-ammo"
+  | "hunter-hit-warden"
+  | "duck-hit-warden"
+type Outcome = { winner: "hunter" | "duck" | null; reason: EndReason }
 
-type EndReason = "hunter-shot-duck" | "hunter-hit-beaver" | "duck-hit-beaver" | "hunter-out-of-ammo"
-
-type Outcome = {
-  winner: "hunter" | "duck" | null
-  reason: EndReason
-}
-
-type Payout = {
-  hunterDelta: number
-  duckDelta: number
-  bankDelta: number
-  beaverDelta: number
-}
-
-type PlayerState = {
-  gold: number
-  level: number
-}
-
-type RoundConfig = {
-  level: 1 // prototype implements Level 1 rules
-  hunterAmmo: number
-  activeCellCount: number
-}
-
-const GRID_SIZE = 9
-const CELLS = Array.from({ length: GRID_SIZE }, (_, i) => i)
+type PlayerState = { gold: number; level: number }
+type Payout = { hunterDelta: number; duckDelta: number; bankDelta: number; beaverDelta: number; wardenDelta?: number }
 
 function sample<T>(arr: T[]) {
   return arr[Math.floor(Math.random() * arr.length)]
 }
-
 function getRandomIndices(count: number, from: number[]) {
   const pool = [...from]
   const out: number[] = []
@@ -56,237 +46,625 @@ function getRandomIndices(count: number, from: number[]) {
   return out
 }
 
-function formatGold(n: number) {
-  return `${Math.round(n)} 🪙`
+// Artifacts inventory
+type Inv = {
+  hunter: {
+    binoculars: boolean
+    compass: boolean
+    trap: boolean
+    trapPlaced?: number | null
+    apBullet: number // бронебойный патрон (заряды), L4
+    extraAmmo: number
+    eagleEye: boolean // L4
+    binocularsPlus: boolean // L3
+    enhancedPayout: boolean
+    eagleEyeUsed?: boolean
+  }
+  duck: {
+    flight: boolean
+    safeFlight: boolean
+    armoredFeatherRank: number // 0..9
+    autoFlight: boolean // L3
+    mirrorPlumage: boolean // L4 (один раз)
+    rain: boolean // L4 активируемый эффект
+    rainActive: boolean
+    ghostFlight: boolean // L4 позволяет на обстрелянную клетку
+    mirrorUsed?: boolean
+    autoFlightUsed?: boolean
+    rainUsed?: boolean
+  }
+}
+
+function defaultInv(): Inv {
+  return {
+    hunter: {
+      binoculars: false,
+      compass: false,
+      trap: false,
+      trapPlaced: null,
+      apBullet: 0,
+      extraAmmo: 0,
+      eagleEye: false,
+      binocularsPlus: false,
+      enhancedPayout: false,
+      eagleEyeUsed: false,
+    },
+    duck: {
+      flight: false,
+      safeFlight: false,
+      armoredFeatherRank: 0,
+      autoFlight: false,
+      mirrorPlumage: false,
+      rain: false,
+      rainActive: false,
+      ghostFlight: false,
+      mirrorUsed: false,
+      autoFlightUsed: false,
+      rainUsed: false,
+    },
+  }
 }
 
 export default function Page() {
-  // Players
+  const [levelKey, setLevelKey] = useState<LevelKey>(1)
+  const level = LEVELS[levelKey]
+  const totalCells = gridSize(level)
+  const ALL = useMemo(() => Array.from({ length: totalCells }, (_, i) => i), [totalCells])
+
+  // Sounds
+  const { play, resume } = useSound()
+  useEffect(() => {
+    const onFirst = () => resume()
+    window.addEventListener("pointerdown", onFirst, { once: true })
+    return () => window.removeEventListener("pointerdown", onFirst)
+  }, [resume])
+
+  // Economy
   const [hunter, setHunter] = useState<PlayerState>({ gold: 500, level: 1 })
   const [duck, setDuck] = useState<PlayerState>({ gold: 500, level: 1 })
   const [bank, setBank] = useState(0)
   const [beaverVault, setBeaverVault] = useState(0)
+  const [wardenVault, setWardenVault] = useState(0)
 
-  // Shop (Level 1)
-  const [hunterHasBinoculars, setHunterHasBinoculars] = useState(false)
-  const [duckHasFlight, setDuckHasFlight] = useState(false)
-
-  // Bets
+  // Shop bets
   const [hunterBet, setHunterBet] = useState(25)
   const [duckBet, setDuckBet] = useState(25)
+  const SHOP = {
+    // базовые
+    binoculars: 40,
+    flight: 40,
+    // L2
+    compass: 60,
+    trap: 50,
+    safeFlight: 60,
+    extraAmmo: 50,
+    // L3
+    binocularsPlus: 80,
+    autoFlight: 120,
+    // L4
+    eagleEye: 160,
+    mirrorPlumage: 160,
+    rain: 120,
+    ghostFlight: 140,
+    apBullet: 120,
+    enhancedPayout: 140,
+    // Пассивы пера (цены за ранг)
+    featherRank: [50, 100, 150, 200, 240, 280, 340, 400, 460],
+  }
 
-  // Round config (Level 1)
-  const cfg: RoundConfig = useMemo(
-    () => ({
-      level: 1,
-      hunterAmmo: 3,
-      activeCellCount: 6,
-    }),
-    [],
-  )
+  const [inv, setInv] = useState<Inv>(defaultInv)
 
-  // Board and entities
+  // Round state
   const [activeCells, setActiveCells] = useState<number[]>([])
   const [shotCells, setShotCells] = useState<Set<number>>(new Set())
   const [revealedEmptyByBinoculars, setRevealedEmptyByBinoculars] = useState<Set<number>>(new Set())
   const [beaverCell, setBeaverCell] = useState<number | null>(null)
+  const [wardenCell, setWardenCell] = useState<number | null>(null) // L4
   const [duckCell, setDuckCell] = useState<number | null>(null)
-  const [ammo, setAmmo] = useState(cfg.hunterAmmo)
+  const [ammo, setAmmo] = useState(level.ammo)
   const [turn, setTurn] = useState<Turn>("pre-bets")
-  const [log, setLog] = useState<string[]>([])
   const [outcome, setOutcome] = useState<Outcome | null>(null)
   const [binocularUsedThisTurn, setBinocularUsedThisTurn] = useState(false)
+  const [compassHint, setCompassHint] = useState<number[]>([])
+  const [eagleEyeHighlight, setEagleEyeHighlight] = useState<number | null>(null)
+  const [duckSnaredTurns, setDuckSnaredTurns] = useState(0)
+  const [placeTrapMode, setPlaceTrapMode] = useState(false)
 
-  const resetRoundState = useCallback(() => {
-    setActiveCells([])
-    setShotCells(new Set())
-    setRevealedEmptyByBinoculars(new Set())
-    setBeaverCell(null)
-    setDuckCell(null)
-    setAmmo(cfg.hunterAmmo)
-    setTurn("pre-bets")
-    setLog([])
-    setOutcome(null)
-    setBinocularUsedThisTurn(false)
-  }, [cfg.hunterAmmo])
+  // Animations
+  const [lastShotAnim, setLastShotAnim] = useState<{ cell: number; id: number } | null>(null)
+  const [showFeathers, setShowFeathers] = useState(false)
 
-  function appendLog(s: string) {
-    setLog((prev) => [s, ...prev].slice(0, 20))
+  // Ammo selection L4
+  const [useAPBullet, setUseAPBullet] = useState(false)
+
+  // Helpers
+  const canChangeLevel = turn === "pre-bets" || turn === "ended"
+
+  // Local state
+  const [duckInvisibleTurns, setDuckInvisibleTurns] = useState(0)
+
+  const resetRoundState = useCallback(
+    (keepBets = true) => {
+      setActiveCells([])
+      setShotCells(new Set())
+      setRevealedEmptyByBinoculars(new Set())
+      setBeaverCell(null)
+      setWardenCell(null)
+      setDuckCell(null)
+      setAmmo(level.ammo + (inv.hunter.extraAmmo || 0))
+      setTurn("pre-bets")
+      setOutcome(null)
+      setBinocularUsedThisTurn(false)
+      setCompassHint([])
+      setEagleEyeHighlight(null)
+      setDuckSnaredTurns(0)
+      setPlaceTrapMode(false)
+      setLastShotAnim(null)
+      setShowFeathers(false)
+      setUseAPBullet(false)
+      setDuckInvisibleTurns(0)
+      // сброс одноразовых эффектов
+      setInv((prev) => ({
+        hunter: { ...prev.hunter, trapPlaced: null, eagleEyeUsed: false },
+        duck: {
+          ...prev.duck,
+          rainActive: false,
+          mirrorUsed: false,
+          autoFlightUsed: false,
+        },
+      }))
+      if (!keepBets) {
+        setHunterBet(25)
+        setDuckBet(25)
+      }
+    },
+    [inv.hunter.extraAmmo, level.ammo],
+  )
+
+  function formatGold(n: number) {
+    return `${Math.round(n)} 🪙`
   }
 
-  // Shop actions (very simple prototype pricing)
-  const SHOP = {
-    binocularsCost: 40,
-    flightCost: 40,
+  // Purchasing
+  function spendGold(player: "hunter" | "duck", cost: number) {
+    if (player === "hunter") setHunter((p) => ({ ...p, gold: p.gold - cost, level: p.level + 1 }))
+    else setDuck((p) => ({ ...p, gold: p.gold - cost, level: p.level + 1 }))
   }
 
-  function buyBinoculars() {
-    if (hunterHasBinoculars) return
-    if (hunter.gold < SHOP.binocularsCost) return
-    setHunter((p) => ({ gold: p.gold - SHOP.binocularsCost, level: p.level + 1 }))
-    setHunterHasBinoculars(true)
-    appendLog("Охотник купил Бинокль (+1 уровень).")
+  // Shop buy handlers
+  function buy(key: keyof typeof SHOP, player: "hunter" | "duck") {
+    const cost = (SHOP as any)[key] as number
+    if (player === "hunter" && hunter.gold < cost) return
+    if (player === "duck" && duck.gold < cost) return
+
+    setInv((prev) => {
+      const next = structuredClone(prev) as Inv
+      if (player === "hunter") {
+        switch (key) {
+          case "binoculars":
+            if (!next.hunter.binoculars) {
+              next.hunter.binoculars = true
+              spendGold("hunter", cost)
+            }
+            break
+          case "compass":
+            if (!next.hunter.compass) {
+              next.hunter.compass = true
+              spendGold("hunter", cost)
+            }
+            break
+          case "trap":
+            if (!next.hunter.trap) {
+              next.hunter.trap = true
+              next.hunter.trapPlaced = null
+              spendGold("hunter", cost)
+            }
+            break
+          case "extraAmmo":
+            next.hunter.extraAmmo += 1
+            spendGold("hunter", cost)
+            break
+          case "binocularsPlus":
+            if (!next.hunter.binocularsPlus) {
+              next.hunter.binocularsPlus = true
+              spendGold("hunter", cost)
+            }
+            break
+          case "eagleEye":
+            if (!next.hunter.eagleEye) {
+              next.hunter.eagleEye = true
+              spendGold("hunter", cost)
+            }
+            break
+          case "apBullet":
+            next.hunter.apBullet += 1
+            spendGold("hunter", cost)
+            break
+          case "enhancedPayout":
+            if (!next.hunter.enhancedPayout) {
+              next.hunter.enhancedPayout = true
+              spendGold("hunter", cost)
+            }
+            break
+        }
+      } else {
+        switch (key) {
+          case "flight":
+            if (!next.duck.flight) {
+              next.duck.flight = true
+              spendGold("duck", cost)
+            }
+            break
+          case "safeFlight":
+            if (!next.duck.safeFlight) {
+              next.duck.safeFlight = true
+              spendGold("duck", cost)
+            }
+            break
+          case "autoFlight":
+            if (!next.duck.autoFlight) {
+              next.duck.autoFlight = true
+              spendGold("duck", cost)
+            }
+            break
+          case "mirrorPlumage":
+            if (!next.duck.mirrorPlumage) {
+              next.duck.mirrorPlumage = true
+              spendGold("duck", cost)
+            }
+            break
+          case "rain":
+            if (!next.duck.rain) {
+              next.duck.rain = true
+              spendGold("duck", cost)
+            }
+            break
+          case "ghostFlight":
+            if (!next.duck.ghostFlight) {
+              next.duck.ghostFlight = true
+              spendGold("duck", cost)
+            }
+            break
+        }
+      }
+      return next
+    })
   }
 
-  function buyFlight() {
-    if (duckHasFlight) return
-    if (duck.gold < SHOP.flightCost) return
-    setDuck((p) => ({ gold: p.gold - SHOP.flightCost, level: p.level + 1 }))
-    setDuckHasFlight(true)
-    appendLog("Утка купила артефакт «Перелет» (+1 уровень).")
+  function buyFeatherRank() {
+    const r = inv.duck.armoredFeatherRank
+    if (r >= 9) return
+    const price = SHOP.featherRank[r] ?? 0
+    if (duck.gold < price) return
+    setInv((prev) => ({ ...prev, duck: { ...prev.duck, armoredFeatherRank: r + 1 } }))
+    spendGold("duck", price)
   }
 
-  // Start round after bets
+  // Start round
   function startRound() {
-    // Validate bets
-    const hb = Math.max(0, Math.min(hunterBet, hunter.gold))
-    const db = Math.max(0, Math.min(duckBet, duck.gold))
-    if (hb <= 0 || db <= 0) {
-      appendLog("Ставки должны быть больше нуля.")
-      return
-    }
-
-    // Deduct bets into pot lock
+    const hb = Math.max(1, Math.min(hunterBet, hunter.gold))
+    const db = Math.max(1, Math.min(duckBet, duck.gold))
+    if (hb <= 0 || db <= 0) return
     setHunter((p) => ({ ...p, gold: p.gold - hb }))
     setDuck((p) => ({ ...p, gold: p.gold - db }))
 
-    // Initialize board
-    const act = getRandomIndices(cfg.activeCellCount, CELLS).sort((a, b) => a - b)
-    const bCell = sample(act)
+    const total = gridSize(level)
+    const all = Array.from({ length: total }, (_, i) => i)
+    const act =
+      level.activeCellCount && level.activeCellCount < total
+        ? getRandomIndices(level.activeCellCount, all).sort((a, b) => a - b)
+        : all
     setActiveCells(act)
-    setBeaverCell(bCell)
+
+    const beav = sample(act)
+    setBeaverCell(beav)
+
+    if (level.hasWarden) {
+      let w = sample(act)
+      while (w === beav) w = sample(act)
+      setWardenCell(w)
+    } else {
+      setWardenCell(null)
+    }
+
     setShotCells(new Set())
     setRevealedEmptyByBinoculars(new Set())
-    setAmmo(cfg.hunterAmmo)
-    setDuckCell(null)
+    setAmmo(level.ammo + (inv.hunter.extraAmmo || 0))
     setOutcome(null)
     setTurn("duck-initial")
     setBinocularUsedThisTurn(false)
+    setDuckSnaredTurns(0)
+    setPlaceTrapMode(false)
+    setUseAPBullet(false)
 
-    appendLog("Раунд начался. Утка ходит первой и выбирает клетку для укрытия.")
+    // Компас подсветка (L2+ при наличии у любого)
+    if (level.key >= 2 && (inv.hunter.compass || true) /*расширяем и для утки в интерфейсе*/) {
+      // подсветка области из 3 клеток, содержащей бобра
+      const others = act.filter((c) => c !== beav)
+      const hint = [beav, ...getRandomIndices(2, others)]
+      setCompassHint(hint)
+    } else {
+      setCompassHint([])
+    }
+
+    // Орлиный глаз (L4)
+    // if (level.key === 4 && inv.hunter.eagleEye && duckCell !== null) {
+    //   setEagleEyeHighlight(duckCell)
+    //   setTimeout(() => setEagleEyeHighlight(null), 1500)
+    // }
   }
 
-  // Payout helpers
-  function distributeOnHunterWin(): Payout {
+  // Payouts helpers
+  function distributeOnHunterWin(normalBullet: boolean): Payout {
     const pot = hunterBet + duckBet
-    const bankFee = Math.round(pot * 0.1)
-    const hunterGain = pot - bankFee
+    let ratio = 0.9
+    if (level.key === 4 && inv.hunter.enhancedPayout) ratio = 0.95
+    let hunterShare = Math.round(pot * ratio)
+    let bankFee = pot - hunterShare
+    if (level.key === 4 && inv.duck.rainActive && normalBullet) {
+      const reduction = Math.round(pot * 0.3)
+      hunterShare = Math.max(0, hunterShare - reduction)
+      bankFee += reduction
+    }
     setBank((b) => b + bankFee)
-    setHunter((p) => ({ ...p, gold: p.gold + hunterGain }))
-    return { hunterDelta: hunterGain, duckDelta: 0, bankDelta: bankFee, beaverDelta: 0 }
+    setHunter((p) => ({ ...p, gold: p.gold + hunterShare, level: p.level + 1 }))
+    return { hunterDelta: hunterShare, duckDelta: 0, bankDelta: bankFee, beaverDelta: 0 }
   }
 
-  // On beaver hit, we assume opponent’s own bet is returned
   function distributeOnBeaverHit(hitBy: "hunter" | "duck"): Payout {
     if (hitBy === "hunter") {
-      const giveToDuck = Math.round(hunterBet * 0.5)
-      const giveToBeaver = Math.round(hunterBet * 0.3)
-      const giveToBank = Math.round(hunterBet * 0.2)
-      // Opponent bet (duck) returned
-      setDuck((p) => ({ ...p, gold: p.gold + giveToDuck + duckBet }))
-      setBeaverVault((s) => s + giveToBeaver)
-      setBank((b) => b + giveToBank)
-      return { hunterDelta: 0, duckDelta: giveToDuck + duckBet, bankDelta: giveToBank, beaverDelta: giveToBeaver }
+      const toDuck = Math.round(hunterBet * 0.5)
+      const toBeaver = Math.round(hunterBet * 0.3)
+      const toBank = Math.round(hunterBet * 0.2)
+      setDuck((p) => ({ ...p, gold: p.gold + toDuck + duckBet, level: p.level + 1 }))
+      setBeaverVault((s) => s + toBeaver)
+      setBank((b) => b + toBank)
+      return { hunterDelta: 0, duckDelta: toDuck + duckBet, bankDelta: toBank, beaverDelta: toBeaver }
     } else {
-      const giveToHunter = Math.round(duckBet * 0.5)
-      const giveToBeaver = Math.round(duckBet * 0.3)
-      const giveToBank = Math.round(duckBet * 0.2)
-      // Opponent bet (hunter) returned
-      setHunter((p) => ({ ...p, gold: p.gold + giveToHunter + hunterBet }))
-      setBeaverVault((s) => s + giveToBeaver)
-      setBank((b) => b + giveToBank)
-      return { hunterDelta: giveToHunter + hunterBet, duckDelta: 0, bankDelta: giveToBank, beaverDelta: giveToBeaver }
+      const toHunter = Math.round(duckBet * 0.5)
+      const toBeaver = Math.round(duckBet * 0.3)
+      const toBank = Math.round(duckBet * 0.2)
+      setHunter((p) => ({ ...p, gold: p.gold + toHunter + hunterBet, level: p.level + 1 }))
+      setBeaverVault((s) => s + toBeaver)
+      setBank((b) => b + toBank)
+      return { hunterDelta: toHunter + hunterBet, duckDelta: 0, bankDelta: toBank, beaverDelta: toBeaver }
     }
   }
 
-  // If hunter out of ammo, award full pot to Duck (Level 1 assumption: no commission on выживание)
   function distributeOnDuckSurvive(): Payout {
     const pot = hunterBet + duckBet
-    setDuck((p) => ({ ...p, gold: p.gold + pot }))
+    // Учитываем "Бронированное/Золотое перо" — возврат ставки при проигрыше утки, но здесь Утка выигрывает банк — не требуется
+    setDuck((p) => ({ ...p, gold: p.gold + pot, level: p.level + 1 }))
     return { hunterDelta: 0, duckDelta: pot, bankDelta: 0, beaverDelta: 0 }
+  }
+
+  function distributeOnWardenHit(hitBy: "hunter" | "duck"): Payout {
+    // Штраф: виновному возвращается только 50% его ставки; 25% — Банку, 25% — "смотрителю".
+    // Ставка оппонента возвращается без изменений.
+    if (hitBy === "hunter") {
+      const half = Math.round(hunterBet * 0.5)
+      const quarter = Math.round(hunterBet * 0.25)
+      setHunter((p) => ({ ...p, gold: p.gold + half }))
+      setDuck((p) => ({ ...p, gold: p.gold + duckBet, level: p.level + 1 }))
+      setBank((b) => b + quarter)
+      setWardenVault((w) => w + quarter)
+      return { hunterDelta: half, duckDelta: duckBet, bankDelta: quarter, beaverDelta: 0, wardenDelta: quarter }
+    } else {
+      const half = Math.round(duckBet * 0.5)
+      const quarter = Math.round(duckBet * 0.25)
+      setDuck((p) => ({ ...p, gold: p.gold + half }))
+      setHunter((p) => ({ ...p, gold: p.gold + hunterBet, level: p.level + 1 }))
+      setBank((b) => b + quarter)
+      setWardenVault((w) => w + quarter)
+      return { hunterDelta: hunterBet, duckDelta: half, bankDelta: quarter, beaverDelta: 0, wardenDelta: quarter }
+    }
   }
 
   function endRound(res: Outcome) {
     setOutcome(res)
     setTurn("ended")
     if (res.reason === "hunter-shot-duck") {
-      // Level-up on victory
-      setHunter((p) => ({ ...p, level: p.level + 1 }))
-      const pay = distributeOnHunterWin()
-      appendLog(
-        `Охотник победил! Получает ${formatGold(pay.hunterDelta)}. Комиссия банка: ${formatGold(pay.bankDelta)}.`,
-      )
+      distributeOnHunterWin(!useAPBullet)
+      setShowFeathers(true)
+      setTimeout(() => setShowFeathers(false), 1400)
+      play("hit")
     } else if (res.reason === "hunter-hit-beaver") {
-      const pay = distributeOnBeaverHit("hunter")
-      appendLog(
-        `Охотник попал в Бобра — мгновенное поражение! Утка получает ${formatGold(
-          pay.duckDelta,
-        )}. Бобру: ${formatGold(pay.beaverDelta)}, Банку: ${formatGold(pay.bankDelta)}.`,
-      )
-      setDuck((p) => ({ ...p, level: p.level + 1 }))
+      distributeOnBeaverHit("hunter")
+      play("beaver")
     } else if (res.reason === "duck-hit-beaver") {
-      const pay = distributeOnBeaverHit("duck")
-      appendLog(
-        `Утка села на клетку с Бобром и проиграла! Охотник получает ${formatGold(
-          pay.hunterDelta,
-        )}. Бобру: ${formatGold(pay.beaverDelta)}, Банку: ${formatGold(pay.bankDelta)}.`,
-      )
-      setHunter((p) => ({ ...p, level: p.level + 1 }))
+      distributeOnBeaverHit("duck")
+      play("beaver")
     } else if (res.reason === "hunter-out-of-ammo") {
-      const pay = distributeOnDuckSurvive()
-      appendLog(`У охотника закончились патроны — Утка выжила и забирает банк ${formatGold(pay.duckDelta)}.`)
-      setDuck((p) => ({ ...p, level: p.level + 1 }))
+      distributeOnDuckSurvive()
+      play("duck")
+    } else if (res.reason === "hunter-hit-warden") {
+      distributeOnWardenHit("hunter")
+      play("beaver")
+    } else if (res.reason === "duck-hit-warden") {
+      distributeOnWardenHit("duck")
+      play("beaver")
     }
   }
 
+  // Derived
+  const overlays: Record<number, CellOverlay> = useMemo(() => {
+    const map: Record<number, CellOverlay> = {}
+    activeCells.forEach((i) => (map[i] = {}))
+    shotCells.forEach((i) => (map[i] = { ...(map[i] || {}), shot: true }))
+    revealedEmptyByBinoculars.forEach((i) => (map[i] = { ...(map[i] || {}), revealedEmpty: true }))
+    compassHint.forEach((i) => (map[i] = { ...(map[i] || {}), compassHint: true }))
+    if (turn === "ended" && beaverCell !== null) map[beaverCell] = { ...(map[beaverCell] || {}), beaver: true }
+    if (turn === "ended" && wardenCell !== null) map[wardenCell] = { ...(map[wardenCell] || {}), warden: true }
+    if (inv.hunter.trapPlaced != null)
+      map[inv.hunter.trapPlaced] = { ...(map[inv.hunter.trapPlaced] || {}), trap: true }
+    if (eagleEyeHighlight != null) map[eagleEyeHighlight] = { ...(map[eagleEyeHighlight] || {}), eagleEyeDuck: true }
+    if (turn === "ended" && duckCell != null) map[duckCell] = { ...(map[duckCell] || {}), duck: true }
+    return map
+  }, [
+    activeCells,
+    beaverCell,
+    compassHint,
+    duckCell,
+    eagleEyeHighlight,
+    inv.hunter.trapPlaced,
+    shotCells,
+    turn,
+    revealedEmptyByBinoculars,
+    wardenCell,
+  ])
+
   // Actions
   function handleDuckInitialChoose(cell: number) {
-    if (turn !== "duck-initial") return
-    if (!activeCells.includes(cell)) return
+    if (turn !== "duck-initial" || !activeCells.includes(cell)) return
+    // Нельзя на выстреленные, НПС
+    if (shotCells.has(cell)) return
+    if (level.hasWarden && wardenCell === cell) {
+      setDuckCell(cell)
+      endRound({ winner: "hunter", reason: "duck-hit-warden" })
+      return
+    }
     if (beaverCell === cell) {
-      // Duck instantly loses on beaver
       setDuckCell(cell)
       endRound({ winner: "hunter", reason: "duck-hit-beaver" })
       return
     }
     setDuckCell(cell)
+    if (level.key === 4 && inv.hunter.eagleEye && !inv.hunter.eagleEyeUsed) {
+      setEagleEyeHighlight(cell)
+      setTimeout(() => setEagleEyeHighlight(null), 1500)
+      setInv((p) => ({ ...p, hunter: { ...p.hunter, eagleEyeUsed: true } }))
+    }
     setTurn("hunter")
     setBinocularUsedThisTurn(false)
-    appendLog(`Утка затаилась в выбранной клетке. Ход Охотника.`)
   }
 
   function handleBinoculars() {
-    if (turn !== "hunter") return
-    if (!hunterHasBinoculars || binocularUsedThisTurn) return
-
-    // Reveal a random currently empty, active, not-shot cell
+    if (turn !== "hunter" || !inv.hunter.binoculars || binocularUsedThisTurn) return
     const empties = activeCells.filter(
-      (c) => c !== duckCell && c !== beaverCell && !shotCells.has(c) && !revealedEmptyByBinoculars.has(c),
+      (c) =>
+        c !== duckCell &&
+        c !== beaverCell &&
+        c !== wardenCell &&
+        !shotCells.has(c) &&
+        !revealedEmptyByBinoculars.has(c),
     )
     if (empties.length === 0) {
-      appendLog("Бинокль не нашел подходящих пустых клеток.")
       setBinocularUsedThisTurn(true)
       return
     }
-    const revealed = sample(empties)
+    const revealCount = inv.hunter.binocularsPlus ? 2 : 1
+    const reveal = getRandomIndices(Math.min(revealCount, empties.length), empties)
     const next = new Set(revealedEmptyByBinoculars)
-    next.add(revealed)
+    reveal.forEach((r) => next.add(r))
     setRevealedEmptyByBinoculars(next)
     setBinocularUsedThisTurn(true)
-    appendLog(`Бинокль подсказал: клетка ${humanCell(revealed)} пуста.`)
+    play("ui")
+  }
+
+  function handlePlaceTrapToggle() {
+    if (turn !== "hunter" || !inv.hunter.trap || inv.hunter.trapPlaced != null) return
+    setPlaceTrapMode((m) => !m)
+    play("ui")
+  }
+
+  function tryPlaceTrap(cell: number) {
+    if (!placeTrapMode) return false
+    if (!activeCells.includes(cell)) return false
+    if (shotCells.has(cell)) return false
+    if (beaverCell === cell || wardenCell === cell || duckCell === cell) return false
+    setInv((prev) => ({ ...prev, hunter: { ...prev.hunter, trapPlaced: cell } }))
+    setPlaceTrapMode(false)
+    play("trap")
+    return true
   }
 
   function handleHunterShoot(cell: number) {
-    if (turn !== "hunter") return
-    if (!activeCells.includes(cell)) return
-    if (shotCells.has(cell)) return
+    if (turn !== "hunter" || !activeCells.includes(cell) || shotCells.has(cell)) return
+    // Если мы в режиме установки капкана — ставим его
+    if (tryPlaceTrap(cell)) return
 
-    if (cell === beaverCell) {
+    setLastShotAnim({ cell, id: Date.now() })
+    play("shot")
+
+    // Warden
+    if (level.hasWarden && wardenCell === cell) {
+      setShotCells((s) => new Set(s).add(cell))
+      endRound({ winner: "duck", reason: "hunter-hit-warden" })
+      return
+    }
+    // Beaver
+    if (beaverCell === cell) {
       setShotCells((s) => new Set(s).add(cell))
       endRound({ winner: "duck", reason: "hunter-hit-beaver" })
       return
     }
-    if (cell === duckCell) {
+    // Duck
+    if (duckCell === cell) {
+      // Легендарная защита
+      if (!useAPBullet && level.key === 4 && inv.duck.mirrorPlumage && !inv.duck.mirrorUsed) {
+        // Отражение: случайная свободная клетка
+        setInv((prev) => ({ ...prev, duck: { ...prev.duck, mirrorUsed: true } }))
+        const free = activeCells.filter((c) => !shotCells.has(c))
+        const refTarget = sample(free)
+        // шанс самоудара 10%
+        if (Math.random() < 0.1) {
+          endRound({ winner: "duck", reason: "hunter-hit-beaver" }) // считаем как "самоудар" ~ штраф, но используем близкий сценарий
+          return
+        }
+        // Применим отражённый выстрел как обычный
+        if (level.hasWarden && refTarget === wardenCell) {
+          endRound({ winner: "duck", reason: "hunter-hit-warden" })
+          return
+        }
+        if (refTarget === beaverCell) {
+          endRound({ winner: "duck", reason: "hunter-hit-beaver" })
+          return
+        }
+        // пусто — промах
+        const nextShots = new Set(shotCells)
+        nextShots.add(cell) // оригинал
+        nextShots.add(refTarget)
+        setShotCells(nextShots)
+        const nextAmmo = ammo - 1
+        setAmmo(nextAmmo)
+        play("miss")
+        if (nextAmmo <= 0) endRound({ winner: "duck", reason: "hunter-out-of-ammo" })
+        else {
+          setTurn("duck")
+          setDuckInvisibleTurns((t) => Math.max(0, t - 1))
+        }
+        return
+      }
+
+      if (!useAPBullet && inv.duck.autoFlight && !inv.duck.autoFlightUsed) {
+        // Автоперелёт, если есть минимум 2 свободные валидные клетки
+        const valid = activeCells.filter((c) => c !== beaverCell && c !== wardenCell && !shotCells.has(c) && c !== cell)
+        if (valid.length >= 1) {
+          const dst = sample(valid)
+          setInv((prev) => ({ ...prev, duck: { ...prev.duck, autoFlightUsed: true } }))
+          setDuckCell(dst)
+          const nextShots = new Set(shotCells)
+          nextShots.add(cell)
+          setShotCells(nextShots)
+          const nextAmmo = ammo - 1
+          setAmmo(nextAmmo)
+          play("miss")
+          if (nextAmmo <= 0) endRound({ winner: "duck", reason: "hunter-out-of-ammo" })
+          else {
+            setTurn("duck")
+            setBinocularUsedThisTurn(false)
+            setDuckInvisibleTurns((t) => Math.max(0, t - 1))
+          }
+          return
+        }
+      }
+
+      // Бронебойный патрон игнорирует защиты
+      if (useAPBullet) {
+        setInv((p) => ({ ...p, hunter: { ...p.hunter, apBullet: Math.max(0, p.hunter.apBullet - 1) } }))
+        setUseAPBullet(false)
+      }
+
       setShotCells((s) => new Set(s).add(cell))
       endRound({ winner: "hunter", reason: "hunter-shot-duck" })
       return
@@ -298,36 +676,39 @@ export default function Page() {
     setShotCells(nextShots)
     const nextAmmo = ammo - 1
     setAmmo(nextAmmo)
-    appendLog(`Выстрел в клетку ${humanCell(cell)} — промах. Осталось патронов: ${nextAmmo}.`)
-    if (nextAmmo <= 0) {
-      endRound({ winner: "duck", reason: "hunter-out-of-ammo" })
-    } else {
+    play("miss")
+    if (nextAmmo <= 0) endRound({ winner: "duck", reason: "hunter-out-of-ammo" })
+    else {
       setTurn("duck")
+      setDuckInvisibleTurns((t) => Math.max(0, t - 1))
     }
   }
 
+  // Duck actions
   const [isFlightMode, setIsFlightMode] = useState(false)
-
   function handleDuckStay() {
     if (turn !== "duck") return
-    appendLog("Утка затаилась и осталась на месте.")
+    if (duckSnaredTurns > 0) {
+      setDuckSnaredTurns(duckSnaredTurns - 1)
+    }
     setTurn("hunter")
     setBinocularUsedThisTurn(false)
   }
-
   function startFlightMode() {
     if (turn !== "duck") return
-    if (!duckHasFlight) return
+    if (!inv.duck.flight && !inv.duck.safeFlight && !inv.duck.ghostFlight) return
+    if (duckSnaredTurns > 0) return
     setIsFlightMode(true)
-    appendLog("Утка использует «Перелет». Выберите новую свободную клетку.")
   }
-
   function handleDuckFlight(cell: number) {
-    if (!isFlightMode || turn !== "duck") return
-    if (!activeCells.includes(cell)) return
-    if (shotCells.has(cell)) return
+    if (!isFlightMode || turn !== "duck" || !activeCells.includes(cell)) return
+    if (level.hasWarden && wardenCell === cell) {
+      setDuckCell(cell)
+      setIsFlightMode(false)
+      endRound({ winner: "hunter", reason: "duck-hit-warden" })
+      return
+    }
     if (beaverCell === cell) {
-      // Flight into beaver is allowed by rules? At L1 artifact doesn't protect, so stepping onto beaver loses immediately
       setDuckCell(cell)
       setIsFlightMode(false)
       endRound({ winner: "hunter", reason: "duck-hit-beaver" })
@@ -335,170 +716,273 @@ export default function Page() {
     }
     setDuckCell(cell)
     setIsFlightMode(false)
-    appendLog(`Утка перелетела в клетку ${humanCell(cell)}.`)
+    // Капкан?
+    if (inv.hunter.trapPlaced === cell) {
+      setDuckSnaredTurns(1)
+      play("trap")
+    }
+    if (inv.duck.ghostFlight) {
+      setDuckInvisibleTurns(1)
+    }
     setTurn("hunter")
     setBinocularUsedThisTurn(false)
   }
 
-  function humanCell(i: number) {
-    // 3x3: rows A-C, cols 1-3
-    const row = String.fromCharCode("A".charCodeAt(0) + Math.floor(i / 3))
-    const col = (i % 3) + 1
-    return `${row}${col}`
+  function handleSafeFlight() {
+    if (turn !== "duck" || !inv.duck.safeFlight) return
+    const safe = activeCells.filter((c) => c !== beaverCell && c !== wardenCell && !shotCells.has(c) && c !== duckCell)
+    if (safe.length === 0) return
+    const dst = sample(safe)
+    setDuckCell(dst)
+    if (inv.hunter.trapPlaced === dst) {
+      setDuckSnaredTurns(1)
+      play("trap")
+    }
+    setTurn("hunter")
+    setBinocularUsedThisTurn(false)
+    setIsFlightMode(false)
+  }
+
+  function handleRain() {
+    if (turn !== "duck" || level.key !== 4 || !inv.duck.rain || inv.duck.rainUsed) return
+    setInv((p) => ({ ...p, duck: { ...p.duck, rainActive: true, rainUsed: true } }))
+    setTurn("hunter")
+    setBinocularUsedThisTurn(false)
+    play("rain")
+  }
+
+  function onCellClick(i: number) {
+    if (turn === "duck-initial") return handleDuckInitialChoose(i)
+    if (turn === "hunter") return handleHunterShoot(i)
+    if (turn === "duck" && isFlightMode) return handleDuckFlight(i)
   }
 
   const canClickCell = useCallback(
     (i: number) => {
       if (!activeCells.includes(i)) return false
-      if (turn === "duck-initial") return true
+      if (turn === "duck-initial") return !shotCells.has(i)
       if (turn === "hunter") return !shotCells.has(i)
-      if (turn === "duck" && isFlightMode) {
-        return !shotCells.has(i)
-      }
+      if (turn === "duck" && isFlightMode) return true
       return false
     },
     [activeCells, isFlightMode, shotCells, turn],
   )
 
-  function onCellClick(i: number) {
-    if (!canClickCell(i)) return
-    if (turn === "duck-initial") handleDuckInitialChoose(i)
-    else if (turn === "hunter") handleHunterShoot(i)
-    else if (turn === "duck" && isFlightMode) handleDuckFlight(i)
-  }
-
   function newRound() {
     resetRoundState()
   }
 
+  // Status text
   const statusText = useMemo(() => {
+    const prefix = `Уровень ${level.key}: ${level.name} • `
     switch (turn) {
       case "pre-bets":
-        return "Сделайте ставки и начните раунд."
+        return prefix + "Ставки и старт"
       case "duck-initial":
-        return "Ход Утки: выберите клетку для укрытия."
+        return prefix + "Утка: выбрать клетку"
       case "hunter":
-        return "Ход Охотника: выстрелите по клетке. Можно использовать Бинокль до выстрела."
+        return prefix + "Охотник: выстрел, бинокль или капкан"
       case "duck":
-        return duckHasFlight ? "Ход Утки: остаться или использовать «Перелет»." : "Ход Утки: можно только остаться."
+        return (
+          prefix +
+          (duckSnaredTurns > 0
+            ? "Утка в капкане: пропуск хода"
+            : inv.duck.flight
+              ? "Утка: затаиться или перелёт"
+              : "Утка: затаиться")
+        )
       case "ended":
-        if (!outcome) return "Раунд завершен."
-        if (outcome.winner === "hunter") return "Победа Охотника!"
-        if (outcome.winner === "duck") return "Победа Утки!"
-        return "Раунд завершен."
+        if (!outcome) return prefix + "Раунд завершен"
+        return prefix + (outcome.winner === "hunter" ? "Победа Охотника" : "Победа Утки")
       default:
-        return ""
+        return prefix
     }
-  }, [duckHasFlight, outcome, turn])
+  }, [duckSnaredTurns, inv.duck.flight, level.key, level.name, outcome, turn])
+
+  // UI
+  const rows = level.rows
+  const cols = level.cols
 
   return (
-    <main className="container mx-auto p-4 md:p-6 lg:p-8">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
+    <SceneBackground
+      src={
+        level.key === 2
+          ? "/images/backgrounds/old-swamp.png"
+          : level.key === 3
+            ? "/images/backgrounds/mountain-lake.png"
+            : level.key === 4
+              ? "/images/backgrounds/reserve.png"
+              : "/images/backgrounds/forest-edge.png"
+      }
+    >
+      <AppHeader />
+      <main className="container mx-auto p-4 md:p-6 lg:p-8">
+        <div className="mx-auto max-w-5xl">
+          {/* Level selector */}
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <LevelPicker
+              disabled={!canChangeLevel}
+              levelKey={levelKey}
+              onChange={(k) => canChangeLevel && (setLevelKey(k), resetRoundState(false))}
+            />
+            <div className="ml-auto" />
+          </div>
+
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle>Охотник против Утки — Прототип (Уровень 1)</CardTitle>
-              <CardDescription>
-                Поле 3x3, активны 6 клеток. Утка ходит первой. Бобер прячется в одной активной клетке.
-              </CardDescription>
-              <div className="mt-2 text-sm">
-                <a href="/assets" className="underline text-emerald-700 dark:text-emerald-300">
-                  Открыть галерею ассетов
-                </a>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between gap-3">
+                <CardTitle className="text-base sm:text-lg">{statusText}</CardTitle>
+
+                {/* HUD */}
+                <div className="flex items-center gap-2">
+                  <HUDItem src="/images/ui/ammo.png" label="Патроны" value={ammo} />
+                  <Separator orientation="vertical" className="h-6" />
+                  <HUDItem src="/images/ui/bet.png" label="Ставка Охотника" value={hunterBet} small />
+                  <HUDItem src="/images/ui/bet.png" label="Ставка Утки" value={duckBet} small />
+                  <Separator orientation="vertical" className="h-6" />
+                  <HUDItem src="/images/ui/bank.png" label="Банк" value={bank} />
+                </div>
               </div>
             </CardHeader>
+
             <CardContent>
-              <div className="flex items-center gap-2 mb-4">
-                <Badge variant="secondary">{statusText}</Badge>
-                {turn === "hunter" && (
-                  <Badge className="bg-red-100 text-red-900 dark:bg-red-900/30 dark:text-red-200">
-                    Патроны: {ammo}
-                  </Badge>
-                )}
-                {duckCell !== null && (turn === "duck" || turn === "hunter") && (
-                  <Badge variant="outline">Клетка утки скрыта</Badge>
-                )}
+              {/* Bets toolbar (only before start) */}
+              {turn === "pre-bets" && (
+                <div className="mb-3 flex flex-wrap items-end gap-2">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm">Охотник</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={hunter.gold}
+                      value={hunterBet}
+                      onChange={(e) => setHunterBet(Number(e.target.value))}
+                      className="w-24"
+                    />
+                    <span className="text-xs text-muted-foreground">Баланс: {formatGold(hunter.gold)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm">Утка</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={duck.gold}
+                      value={duckBet}
+                      onChange={(e) => setDuckBet(Number(e.target.value))}
+                      className="w-24"
+                    />
+                    <span className="text-xs text-muted-foreground">Баланс: {formatGold(duck.gold)}</span>
+                  </div>
+                  <Button className="ml-auto" onClick={startRound}>
+                    Начать раунд
+                  </Button>
+                  <ShopDialog
+                    level={level}
+                    inv={inv}
+                    prices={SHOP}
+                    balances={{ hunter: hunter.gold, duck: duck.gold }}
+                    buy={buy}
+                    buyFeatherRank={buyFeatherRank}
+                  />
+                </div>
+              )}
+
+              {/* Board */}
+              <div className="relative">
+                <FeatherBurst show={showFeathers} />
+
+                <GameBoard
+                  rows={rows}
+                  cols={cols}
+                  activeCells={activeCells}
+                  overlays={overlays}
+                  lastShotAnim={lastShotAnim}
+                  canClick={canClickCell}
+                  onCellClick={onCellClick}
+                />
               </div>
 
-              {/* Grid */}
-              <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4">
-                {CELLS.map((i) => {
-                  const isActive = activeCells.includes(i)
-                  const isShot = shotCells.has(i)
-                  const isRevealedEmpty = revealedEmptyByBinoculars.has(i)
-                  const showBeaver = turn === "ended" && beaverCell === i // reveal after round
-
-                  const label = humanCell(i)
-
-                  return (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => onCellClick(i)}
-                      className={cn(
-                        "relative aspect-square rounded-xl border text-sm sm:text-base transition",
-                        isActive ? "bg-emerald-50 dark:bg-emerald-950/40" : "bg-muted opacity-50",
-                        canClickCell(i) ? "hover:ring-2 hover:ring-emerald-400" : "cursor-not-allowed",
-                        isShot && "bg-neutral-200 dark:bg-neutral-800 line-through",
-                      )}
-                      aria-label={`Клетка ${label}${isActive ? "" : " (недоступна)"}`}
-                    >
-                      <div className="absolute left-2 top-2 text-xs opacity-60">{label}</div>
-
-                      {isShot && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-neutral-400/40 dark:bg-neutral-700/50 shadow-inner" />
-                        </div>
-                      )}
-
-                      {isRevealedEmpty && !isShot && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="px-2 py-1 rounded bg-emerald-200 text-emerald-900 text-xs">ПУСТО</div>
-                        </div>
-                      )}
-
-                      {showBeaver && (
-                        <div className="absolute inset-0 flex items-center justify-center text-3xl">{"🦫"}</div>
-                      )}
-
-                      {/* Reveal duck only when round ends */}
-                      {turn === "ended" && duckCell === i && (
-                        <div className="absolute inset-0 flex items-center justify-center text-3xl">{"🦆"}</div>
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-
-              {/* Turn controls */}
+              {/* Controls */}
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 {turn === "hunter" && (
                   <>
                     <Button
-                      variant={hunterHasBinoculars && !binocularUsedThisTurn ? "secondary" : "outline"}
+                      variant={inv.hunter.binoculars && !binocularUsedThisTurn ? "secondary" : "outline"}
                       onClick={handleBinoculars}
-                      disabled={!hunterHasBinoculars || binocularUsedThisTurn}
+                      disabled={!inv.hunter.binoculars || binocularUsedThisTurn}
                     >
-                      <Binoculars className="mr-2 h-4 w-4" />
-                      Бинокль
+                      <Telescope className="mr-2 h-4 w-4" />
+                      {"Бинокль"}
+                      {inv.hunter.binocularsPlus && (
+                        <Badge variant="outline" className="ml-2">
+                          +1
+                        </Badge>
+                      )}
                     </Button>
-                    <div className="text-sm text-muted-foreground">
-                      Нажмите на клетку, чтобы выстрелить <Target className="inline-block ml-1 h-4 w-4" />
-                    </div>
+
+                    {inv.hunter.trap && (
+                      <Button
+                        variant={placeTrapMode ? "secondary" : "outline"}
+                        onClick={handlePlaceTrapToggle}
+                        disabled={inv.hunter.trapPlaced != null}
+                      >
+                        <Image src="/images/ui/trap.png" alt="Капкан" width={16} height={16} className="mr-2" />
+                        {inv.hunter.trapPlaced != null
+                          ? "Капкан установлен"
+                          : placeTrapMode
+                            ? "Укажите клетку"
+                            : "Поставить капкан"}
+                      </Button>
+                    )}
+
+                    {level.key === 4 && inv.hunter.apBullet > 0 && (
+                      <Button
+                        variant={useAPBullet ? "secondary" : "outline"}
+                        onClick={() => setUseAPBullet((v) => !v)}
+                        title="Бронебойный патрон игнорирует защиты Утки"
+                      >
+                        <Zap className="mr-2 h-4 w-4" />
+                        {useAPBullet ? "Патрон: Бронебойный" : `Патрон: Обычный (${inv.hunter.apBullet})`}
+                      </Button>
+                    )}
+
+                    <Badge variant="outline" className="text-xs">
+                      {"Нажмите на клетку, чтобы выстрелить "}
+                      <Target className="inline-block ml-1 h-4 w-4" />
+                    </Badge>
                   </>
                 )}
 
                 {turn === "duck" && (
                   <>
-                    <Button variant="secondary" onClick={handleDuckStay}>
-                      Затаиться
-                    </Button>
-                    <Button onClick={startFlightMode} disabled={!duckHasFlight}>
-                      <MoveRight className="mr-2 h-4 w-4" />
-                      Перелет
-                    </Button>
-                    {isFlightMode && (
-                      <span className="text-sm text-muted-foreground">Выберите новую свободную клетку.</span>
+                    {duckSnaredTurns > 0 ? (
+                      <Badge variant="destructive">{"Капкан: пропуск хода"}</Badge>
+                    ) : (
+                      <>
+                        <Button variant="secondary" onClick={handleDuckStay}>
+                          {"Затаиться"}
+                        </Button>
+                        <Button
+                          onClick={startFlightMode}
+                          disabled={!inv.duck.flight && !inv.duck.safeFlight && !inv.duck.ghostFlight}
+                        >
+                          <MoveRight className="mr-2 h-4 w-4" />
+                          {"Перелет"}
+                        </Button>
+                        {inv.duck.safeFlight && (
+                          <Button variant="outline" onClick={handleSafeFlight}>
+                            <Shield className="mr-2 h-4 w-4" />
+                            {"Безопасный перелёт"}
+                          </Button>
+                        )}
+                        {level.key === 4 && inv.duck.rain && !inv.duck.rainUsed && (
+                          <Button variant="outline" onClick={handleRain}>
+                            <CloudRain className="mr-2 h-4 w-4" />
+                            {"Дождь"}
+                          </Button>
+                        )}
+                        {isFlightMode && <span className="text-sm text-muted-foreground">{"Выберите клетку"}</span>}
+                      </>
                     )}
                   </>
                 )}
@@ -506,218 +990,358 @@ export default function Page() {
                 {turn === "ended" && (
                   <Button variant="default" onClick={newRound}>
                     <RotateCcw className="mr-2 h-4 w-4" />
-                    Новый раунд
+                    {"Новый раунд"}
                   </Button>
+                )}
+
+                {/* Quick shop access */}
+                {turn !== "pre-bets" && (
+                  <ShopDialog
+                    level={level}
+                    inv={inv}
+                    prices={SHOP}
+                    balances={{ hunter: hunter.gold, duck: duck.gold }}
+                    buy={buy}
+                    buyFeatherRank={buyFeatherRank}
+                  />
                 )}
               </div>
 
-              <Separator className="my-4" />
-
-              {/* Bets and round start */}
-              {turn === "pre-bets" && (
-                <div className="grid gap-3 sm:grid-cols-3 items-end">
-                  <div>
-                    <div className="mb-1 text-sm font-medium">Ставка Охотника</div>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={hunter.gold}
-                      value={hunterBet}
-                      onChange={(e) => setHunterBet(Number(e.target.value))}
-                    />
-                    <div className="mt-1 text-xs text-muted-foreground">Баланс: {formatGold(hunter.gold)}</div>
-                  </div>
-                  <div>
-                    <div className="mb-1 text-sm font-medium">Ставка Утки</div>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={duck.gold}
-                      value={duckBet}
-                      onChange={(e) => setDuckBet(Number(e.target.value))}
-                    />
-                    <div className="mt-1 text-xs text-muted-foreground">Баланс: {formatGold(duck.gold)}</div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button className="w-full" onClick={startRound}>
-                      Начать раунд
-                    </Button>
-                  </div>
+              {/* Outcome banner */}
+              {outcome && (
+                <div className="mt-4">
+                  <Alert>
+                    <AlertTitle>
+                      {outcome.reason === "hunter-shot-duck" && "Победа Охотника"}
+                      {outcome.reason === "hunter-hit-beaver" && "Охотник попал в Бобра"}
+                      {outcome.reason === "duck-hit-beaver" && "Утка встретилась с Бобром"}
+                      {outcome.reason === "hunter-out-of-ammo" && "Патроны закончились"}
+                      {outcome.reason === "hunter-hit-warden" && "Охотник попал в Смотрителя"}
+                      {outcome.reason === "duck-hit-warden" && "Утка встретилась со Смотрителем"}
+                    </AlertTitle>
+                    <AlertDescription className="text-sm">
+                      {outcome.reason === "hunter-shot-duck" &&
+                        (level.key === 4 && inv.duck.rainActive
+                          ? "Охотник побеждает: из-за Дождя его доля снижена на 30% (остальное — Банку)."
+                          : level.key === 4 && inv.hunter.enhancedPayout
+                            ? "Охотник забирает 95% банка (усиленные патроны)."
+                            : "Охотник забирает 90% банка. Банк игры берет 10% комиссию.")}
+                      {outcome.reason === "hunter-hit-beaver" &&
+                        "Утка получает 50% ставки Охотника, 30% — Бобру, 20% — Банку. Ставка Утки возвращается."}
+                      {outcome.reason === "duck-hit-beaver" &&
+                        "Охотник получает 50% ставки Утки, 30% — Бобру, 20% — Банку. Ставка Охотника возвращается."}
+                      {outcome.reason === "hunter-out-of-ammo" && "Утка выжила и забирает весь банк."}
+                      {outcome.reason === "hunter-hit-warden" &&
+                        "Штраф: Охотнику возвращается 50% своей ставки, по 25% — Банку и Смотрителю. Ставка Утки возвращается."}
+                      {outcome.reason === "duck-hit-warden" &&
+                        "Штраф: Утке возвращается 50% своей ставки, по 25% — Банку и Смотрителю. Ставка Охотника возвращается."}
+                    </AlertDescription>
+                  </Alert>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Event log */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle>Журнал событий</CardTitle>
-              <CardDescription>Последние ходы и результаты.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {log.length === 0 ? (
-                <div className="text-sm text-muted-foreground">Здесь будут появляться события раунда.</div>
-              ) : (
-                <ul className="space-y-2 text-sm">
-                  {log.map((entry, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <span className="mt-0.5 text-muted-foreground">•</span>
-                      <span>{entry}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+          {/* Footer balances condensed */}
+          <div className="mt-3 grid grid-cols-2 sm:grid-cols-5 gap-2">
+            <StatChip
+              src="/images/emoji/hunter-grin.png"
+              title="Охотник"
+              value={`${formatGold(hunter.gold)} • Lv.${hunter.level}`}
+            />
+            <StatChip
+              src="/images/emoji/duck-sneaky.png"
+              title="Утка"
+              value={`${formatGold(duck.gold)} • Lv.${duck.level}`}
+            />
+            <StatChip src="/images/ui/bank.png" title="Банк" value={formatGold(bank)} />
+            <StatChip src="/images/ui/beaver-vault.png" title="Бобер" value={formatGold(beaverVault)} />
+            {level.key === 4 && (
+              <StatChip src="/images/ui/ranger.png" title="Смотритель" value={formatGold(wardenVault)} />
+            )}
+          </div>
         </div>
+      </main>
+    </SceneBackground>
+  )
+}
 
-        {/* Sidebar: balances, shop, rules, art */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle>Счета и уровни</CardTitle>
-              <CardDescription>Экономика и прогресс</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div className="flex items-center justify-between">
-                <div className="font-medium">Охотник</div>
-                <div>{formatGold(hunter.gold)}</div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="text-muted-foreground">Уровень</div>
-                <div>Lv. {hunter.level}</div>
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="font-medium">Утка</div>
-                <div>{formatGold(duck.gold)}</div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="text-muted-foreground">Уровень</div>
-                <div>Lv. {duck.level}</div>
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="font-medium">Банк игры</div>
-                <div>{formatGold(bank)}</div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="font-medium">Бобер</div>
-                <div>{formatGold(beaverVault)}</div>
-              </div>
-            </CardContent>
-          </Card>
+// UI bits
+function HUDItem({
+  src,
+  label,
+  value,
+  small = false,
+}: { src: string; label: string; value: number | string; small?: boolean }) {
+  return (
+    <div className={cn("flex items-center gap-1 rounded-md border bg-background/70 px-2 py-1", small && "text-xs")}>
+      <Image
+        src={src || "/placeholder.svg"}
+        alt={label}
+        width={small ? 16 : 18}
+        height={small ? 16 : 18}
+        className="rounded"
+      />
+      <span className="font-medium">{value}</span>
+    </div>
+  )
+}
+function StatChip({ src, title, value }: { src: string; title: string; value: string }) {
+  return (
+    <div className="flex items-center gap-2 rounded-xl border bg-white/70 px-3 py-2 backdrop-blur-md dark:bg-black/30">
+      <Image src={src || "/placeholder.svg"} alt={title} width={22} height={22} className="rounded" />
+      <div className="min-w-0">
+        <div className="text-xs text-muted-foreground">{title}</div>
+        <div className="text-sm font-medium truncate">{value}</div>
+      </div>
+    </div>
+  )
+}
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle>Магазин (Уровень 1)</CardTitle>
-              <CardDescription>Покупки дают +1 уровень.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="text-sm">
-                  <div className="font-medium">Бинокль (Охотник)</div>
-                  <div className="text-muted-foreground">До выстрела случайно покажет пустую клетку.</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">{formatGold(SHOP.binocularsCost)}</Badge>
-                  <Button
-                    size="sm"
-                    onClick={buyBinoculars}
-                    disabled={hunterHasBinoculars || hunter.gold < SHOP.binocularsCost}
-                  >
-                    {hunterHasBinoculars ? "Куплено" : "Купить"}
-                  </Button>
-                </div>
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="text-sm">
-                  <div className="font-medium">Перелет (Утка)</div>
-                  <div className="text-muted-foreground">Перемещение на любую свободную клетку.</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">{formatGold(SHOP.flightCost)}</Badge>
-                  <Button size="sm" onClick={buyFlight} disabled={duckHasFlight || duck.gold < SHOP.flightCost}>
-                    {duckHasFlight ? "Куплено" : "Купить"}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+function LevelPicker({
+  levelKey,
+  onChange,
+  disabled,
+}: { levelKey: LevelKey; onChange: (k: LevelKey) => void; disabled?: boolean }) {
+  return (
+    <div className="flex items-center gap-2 rounded-xl border bg-white/70 px-2 py-1 backdrop-blur-md dark:bg-black/30">
+      <span className="text-xs text-muted-foreground">{"Уровень:"}</span>
+      {[1, 2, 3, 4].map((k) => (
+        <Button
+          key={k}
+          size="sm"
+          variant={levelKey === k ? "secondary" : "outline"}
+          onClick={() => onChange(k as LevelKey)}
+          disabled={disabled}
+        >
+          {k}
+        </Button>
+      ))}
+    </div>
+  )
+}
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2">
-                <Info className="h-4 w-4" />
-                Правила раунда (Lv.1)
-              </CardTitle>
-              <CardDescription>Кратко о механике и выплатах</CardDescription>
-            </CardHeader>
-            <CardContent className="text-sm space-y-2">
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Поле 3x3, активны 6 случайных клеток. Бобер прячется в одной из них.</li>
-                <li>Утка ходит первой: выбирает клетку. Попала к Бобру — проигрыш.</li>
-                <li>Охотник: 3 патрона. Попал в Утку — победа Охотника. Попал в Бобра — поражение Охотника.</li>
-                <li>Промах оставляет воронку — клетка становится недоступной для перелета.</li>
-                <li>«Перелет» доступен, если куплен артефакт.</li>
-                <li>
-                  Выплаты:
-                  <ul className="list-disc pl-5">
-                    <li>Победа Охотника: 90% от общего банка, 10% в Банк игры.</li>
-                    <li>
-                      Попадание в Бобра: 50% ставки виновного сопернику, 30% Бобру, 20% Банку. Ставка соперника
-                      возвращается.
-                    </li>
-                    <li>Закончились патроны: Утка забирает весь банк (допущение прототипа).</li>
-                  </ul>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
+function ShopDialog({
+  level,
+  inv,
+  prices,
+  balances,
+  buy,
+  buyFeatherRank,
+}: {
+  level: LevelRules
+  inv: any
+  prices: any
+  balances: { hunter: number; duck: number }
+  buy: (key: string, player: "hunter" | "duck") => void
+  buyFeatherRank: () => void
+}) {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline">
+          <ShoppingBag className="mr-2 h-4 w-4" />
+          {"Магазин"}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{`Магазин (Уровень ${level.key})`}</DialogTitle>
+        </DialogHeader>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle>Арт-референс</CardTitle>
-              <CardDescription>Вдохновляющий стиль и атмосфера</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="relative overflow-hidden rounded-xl border">
-                <Image
-                  src="/images/duck-arcade.png"
-                  alt="Карикатурная сцена охоты на уток у озера: охотник в камышах, летающие утки, интерфейс со счетом и патронами."
-                  width={768}
-                  height={1152}
-                  className="w-full h-auto"
-                  priority
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Hunter side */}
+          <div className="rounded-lg border p-3">
+            <div className="mb-2 flex items-center gap-2">
+              <Image src="/images/emoji/hunter-grin.png" alt="Охотник" width={22} height={22} />
+              <div className="font-medium">{"Охотник"}</div>
+              <div className="ml-auto text-xs text-muted-foreground">{`Баланс: ${balances.hunter} 🪙`}</div>
+            </div>
+
+            <ShopRow
+              icon="/images/ui/binoculars.png"
+              title="Бинокль"
+              desc={`Открывает ${inv.hunter.binocularsPlus ? "2" : "1"} пустые клетки перед выстрелом`}
+              price={prices.binoculars}
+              owned={inv.hunter.binoculars}
+              onBuy={() => buy("binoculars", "hunter")}
+            />
+            {level.key >= 2 && (
+              <>
+                <ShopRow
+                  icon="/images/ui/compass.png"
+                  title="Компас"
+                  desc="В начале раунда подсвечивает область 3 клеток с Бобром"
+                  price={prices.compass}
+                  owned={inv.hunter.compass}
+                  onBuy={() => buy("compass", "hunter")}
                 />
-              </div>
-              <div className="mt-2 text-xs text-muted-foreground">
-                Источник добавлен в проект и используется локально.
-              </div>
-            </CardContent>
-          </Card>
+                <ShopRow
+                  icon="/images/ui/trap.png"
+                  title="Капкан"
+                  desc="Один раз за раунд: обездвиживает Утку на 1 ход"
+                  price={prices.trap}
+                  owned={inv.hunter.trap}
+                  onBuy={() => buy("trap", "hunter")}
+                />
+                <ShopRow
+                  icon="/images/ui/ammo.png"
+                  title="Доп. патрон"
+                  desc="Плюс один патрон в раунде"
+                  price={prices.extraAmmo}
+                  onBuy={() => buy("extraAmmo", "hunter")}
+                />
+              </>
+            )}
+            {level.key >= 3 && (
+              <ShopRow
+                icon="/images/ui/binoculars.png"
+                title="Улучшенный бинокль"
+                desc="Открывает 2 пустые клетки"
+                price={prices.binocularsPlus}
+                owned={inv.hunter.binocularsPlus}
+                onBuy={() => buy("binocularsPlus", "hunter")}
+              />
+            )}
+            {level.key >= 4 && (
+              <>
+                <ShopRow
+                  icon="/images/ui/level-up.png"
+                  title="Орлиный глаз"
+                  desc="В начале раунда подсвечивает клетку Утки (1 ход)"
+                  price={prices.eagleEye}
+                  owned={inv.hunter.eagleEye}
+                  onBuy={() => buy("eagleEye", "hunter")}
+                />
+                <ShopRow
+                  icon="/images/ui/danger.png"
+                  title="Бронебойный патрон"
+                  desc="Игнорирует защиты Утки (одноразовый)"
+                  price={prices.apBullet}
+                  onBuy={() => buy("apBullet", "hunter")}
+                />
+                <ShopRow
+                  icon="/images/ui/ammo.png"
+                  title="Усиленные патроны"
+                  desc="Повышают долю выигрыша до 95% (обычные патроны)"
+                  price={prices.enhancedPayout}
+                  owned={inv.hunter.enhancedPayout}
+                  onBuy={() => buy("enhancedPayout", "hunter")}
+                />
+              </>
+            )}
+          </div>
 
-          {outcome && (
-            <Alert>
-              <AlertTitle>
-                {outcome.reason === "hunter-shot-duck" && "Победа Охотника"}
-                {outcome.reason === "hunter-hit-beaver" && "Охотник попал в Бобра"}
-                {outcome.reason === "duck-hit-beaver" && "Утка встретилась с Бобром"}
-                {outcome.reason === "hunter-out-of-ammo" && "Патроны закончились"}
-              </AlertTitle>
-              <AlertDescription>
-                {outcome.reason === "hunter-shot-duck" && "Охотник забирает 90% банка. Банк игры берет 10% комиссию."}
-                {outcome.reason === "hunter-hit-beaver" &&
-                  "Утка получает 50% ставки Охотника, 30% — Бобру, 20% — Банку. Ставка Утки возвращается."}
-                {outcome.reason === "duck-hit-beaver" &&
-                  "Охотник получает 50% ставки Утки, 30% — Бобру, 20% — Банку. Ставка Охотника возвращается."}
-                {outcome.reason === "hunter-out-of-ammo" && "Утка выжила и забирает весь банк (правило прототипа)."}
-              </AlertDescription>
-            </Alert>
-          )}
+          {/* Duck side */}
+          <div className="rounded-lg border p-3">
+            <div className="mb-2 flex items-center gap-2">
+              <Image src="/images/emoji/duck-sneaky.png" alt="Утка" width={22} height={22} />
+              <div className="font-medium">{"Утка"}</div>
+              <div className="ml-auto text-xs text-muted-foreground">{`Баланс: ${balances.duck} 🪙`}</div>
+            </div>
+
+            <ShopRow
+              icon="/images/ui/flight.png"
+              title="Перелёт"
+              desc="Перемещение на любую свободную активную клетку"
+              price={prices.flight}
+              owned={inv.duck.flight}
+              onBuy={() => buy("flight", "duck")}
+            />
+            <ShopRow
+              icon="/images/ui/shield-feather.png"
+              title={`Бронированное перо R${inv.duck.armoredFeatherRank + 1}`}
+              desc="Возврат части ставки при проигрыше (5→45%)"
+              price={prices.featherRank[inv.duck.armoredFeatherRank] ?? 0}
+              owned={inv.duck.armoredFeatherRank >= 9}
+              onBuy={buyFeatherRank}
+            />
+
+            {level.key >= 2 && (
+              <ShopRow
+                icon="/images/ui/safe-flight.png"
+                title="Безопасный перелёт"
+                desc="Случайная безопасная клетка (без НПС/меток)"
+                price={prices.safeFlight}
+                owned={inv.duck.safeFlight}
+                onBuy={() => buy("safeFlight", "duck")}
+              />
+            )}
+            {level.key >= 3 && (
+              <ShopRow
+                icon="/images/ui/ghost-flight.png"
+                title="Автоперелёт при попадании"
+                desc="При выстреле Охотника Утка мгновенно перелетит"
+                price={prices.autoFlight}
+                owned={inv.duck.autoFlight}
+                onBuy={() => buy("autoFlight", "duck")}
+              />
+            )}
+            {level.key >= 4 && (
+              <>
+                <ShopRow
+                  icon="/images/ui/ghost-flight.png"
+                  title="Призрачный перелёт"
+                  desc="Можно на обстрелянные клетки; невидимость (упрощено)"
+                  price={prices.ghostFlight}
+                  owned={inv.duck.ghostFlight}
+                  onBuy={() => buy("ghostFlight", "duck")}
+                />
+                <ShopRow
+                  icon="/images/ui/gold-trophy.png"
+                  title="Зеркальное оперение"
+                  desc="Один раз отражает выстрел Охотника"
+                  price={prices.mirrorPlumage}
+                  owned={inv.duck.mirrorPlumage}
+                  onBuy={() => buy("mirrorPlumage", "duck")}
+                />
+                <ShopRow
+                  icon="/images/ui/rain-cloud.png"
+                  title="Дождь"
+                  desc="Снижает эффект обычных патронов на 30% в этом раунде"
+                  price={prices.rain}
+                  owned={inv.duck.rain}
+                  onBuy={() => buy("rain", "duck")}
+                />
+              </>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function ShopRow({
+  icon,
+  title,
+  desc,
+  price,
+  onBuy,
+  owned,
+}: {
+  icon: string
+  title: string
+  desc: string
+  price: number
+  onBuy: () => void
+  owned?: boolean
+}) {
+  return (
+    <div className="flex items-center justify-between py-2">
+      <div className="flex items-center gap-3 min-w-0">
+        <Image src={icon || "/placeholder.svg"} alt={title} width={28} height={28} />
+        <div className="min-w-0">
+          <div className="text-sm font-medium truncate">{title}</div>
+          <div className="text-xs text-muted-foreground truncate">{desc}</div>
         </div>
       </div>
-    </main>
+      <div className="flex items-center gap-2">
+        <Badge variant="outline">{`${price} 🪙`}</Badge>
+        <Button size="sm" onClick={onBuy} disabled={!!owned}>
+          {owned ? "Куплено" : "Купить"}
+        </Button>
+      </div>
+    </div>
   )
 }
