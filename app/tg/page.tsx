@@ -1,6 +1,10 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
+
+// Disable prerendering so build doesn't try to SSR this client page
+export const dynamic = "force-dynamic"
+export const revalidate = 0
 
 // Minimal Telegram WebApp typings
 declare global {
@@ -23,20 +27,25 @@ declare global {
 export default function TelegramMiniAppPage() {
   const [ready, setReady] = useState(false)
   const [ok, setOk] = useState<boolean | null>(null)
+  const [isDark, setIsDark] = useState(false)
 
-  // Validate initData on the server for trust
+  // Ensure WebApp API is initialized
   useEffect(() => {
-    const wa = window.Telegram?.WebApp
+    const wa = typeof window !== "undefined" ? window.Telegram?.WebApp : undefined
     try {
       wa?.ready()
       wa?.expand()
       setReady(true)
-    } catch {}
+    } catch {
+      setReady(true)
+    }
   }, [])
 
+  // Validate initData on the server for trust
   useEffect(() => {
-    const wa = window.Telegram?.WebApp
+    const wa = typeof window !== "undefined" ? window.Telegram?.WebApp : undefined
     const initData = wa?.initData
+    if (!ready) return
     if (!initData) {
       setOk(false)
       return
@@ -55,13 +64,12 @@ export default function TelegramMiniAppPage() {
     })()
   }, [ready])
 
-  const isDark = useMemo(() => {
-    const scheme = window.Telegram?.WebApp?.colorScheme
-    return scheme === "dark"
+  // Read theme after we are on the client
+  useEffect(() => {
+    const scheme = typeof window !== "undefined" ? window.Telegram?.WebApp?.colorScheme : undefined
+    setIsDark(scheme === "dark")
   }, [ready])
 
-  // We embed the existing app in an iframe for simplicity.
-  // If Telegram blocks iframes, the fallback button navigates directly.
   return (
     <div
       className="min-h-dvh w-full"
