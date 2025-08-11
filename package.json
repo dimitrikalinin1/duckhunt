@@ -9,12 +9,10 @@
     "start": "next start"
   },
   "dependencies": {
-    "@ai-sdk/openai": "latest",
     "@radix-ui/react-dialog": "latest",
     "@radix-ui/react-separator": "latest",
     "@radix-ui/react-slot": "latest",
     "@radix-ui/react-tabs": "latest",
-    "ai": "latest",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.454.0",
@@ -23,8 +21,7 @@
     "react": "^19",
     "react-dom": "^19",
     "tailwind-merge": "^2.5.5",
-    "tailwindcss-animate": "^1.0.7",
-    "zod": "latest"
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.9",

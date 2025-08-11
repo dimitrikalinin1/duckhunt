@@ -601,24 +601,24 @@ export default function GameSession({ playerCharacter, onBackToMenu }: Props) {
     if (turn !== "hunter" || playerCharacter !== "duck") return
 
     setAiThinking(true)
+
+    // ВАЖНО: ИИ-охотник НЕ должен знать точную позицию утки!
+    // Передаем null вместо duckCell
     const aiMove = await ai.makeMove({
       activeCells,
       shotCells: Array.from(shotCells),
-      playerCell: duckCell,
+      playerCell: null, // ИИ не знает где утка!
       beaverCell,
       wardenCell,
       level: level.key,
       ammo,
       compassHint,
       playerArtifacts: {
-        duck: {
-          flight: inv.duck.flight,
-          safeFlight: inv.duck.safeFlight,
-          armoredFeatherRank: inv.duck.armoredFeatherRank,
-          mirrorPlumage: inv.duck.mirrorPlumage,
-          autoFlight: inv.duck.autoFlight,
-          rain: inv.duck.rain,
-          ghostFlight: inv.duck.ghostFlight,
+        hunter: {
+          binoculars: inv.hunter.binoculars,
+          trap: inv.hunter.trap,
+          apBullet: inv.hunter.apBullet,
+          eagleEye: inv.hunter.eagleEye,
         },
       },
     })
@@ -639,7 +639,7 @@ export default function GameSession({ playerCharacter, onBackToMenu }: Props) {
     const aiMove = await ai.makeMove({
       activeCells,
       shotCells: Array.from(shotCells),
-      playerCell: duckCell,
+      playerCell: duckCell, // ИИ-утка знает свою позицию
       beaverCell,
       wardenCell,
       level: level.key,
