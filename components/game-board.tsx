@@ -55,6 +55,7 @@ export default function GameBoard({ rows, cols, activeCells, overlays, lastShotA
                 : "cursor-not-allowed",
               o.shot && "bg-neutral-200/80 dark:bg-neutral-800/70 line-through",
               o.compassHint && "ring-2 ring-amber-400/70",
+              o.duck && "ring-2 ring-blue-400/70 bg-blue-50/80 dark:bg-blue-950/50",
             )}
             aria-disabled={!canClick(i)}
           >
@@ -74,6 +75,12 @@ export default function GameBoard({ rows, cols, activeCells, overlays, lastShotA
             {/* Легендарный подсвет "утки" (одноразовый эффект) */}
             {o.eagleEyeDuck && (
               <div className="absolute inset-0 flex items-center justify-center text-3xl drop-shadow">{"🦆"}</div>
+            )}
+
+            {o.duck && (
+              <div className="absolute inset-0 flex items-center justify-center text-3xl drop-shadow animate-pulse">
+                {"🦆"}
+              </div>
             )}
 
             {/* Показываем НПС при конце/раскрытии */}
