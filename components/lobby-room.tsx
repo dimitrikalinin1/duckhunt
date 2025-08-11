@@ -14,9 +14,10 @@ type Props = {
   playerId: string
   onLeaveLobby: () => void
   onStartGame: (playerRole: PlayerRole) => void
+  onBackToMenu?: () => void
 }
 
-export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame }: Props) {
+export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame, onBackToMenu }: Props) {
   const [lobby, setLobby] = useState<Lobby | null>(null)
   const [countdown, setCountdown] = useState<number | null>(null)
   const [copied, setCopied] = useState(false)
@@ -78,6 +79,12 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const handleBackToMenu = () => {
+    if (onBackToMenu) {
+      onBackToMenu()
+    }
+  }
+
   if (!lobby) {
     return (
       <div className="container mx-auto p-4 md:p-6 lg:p-8">
@@ -93,10 +100,18 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
       <div className="mx-auto max-w-4xl">
         <div className="mb-4 flex items-center justify-between">
-          <Button variant="outline" onClick={handleLeaveLobby}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Покинуть лобби
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleLeaveLobby}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Покинуть лобби
+            </Button>
+            {onBackToMenu && (
+              <Button variant="ghost" onClick={handleBackToMenu}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Главное меню
+              </Button>
+            )}
+          </div>
 
           <div className="flex items-center gap-2">
             <div className="font-mono font-bold text-xl">{lobbyId}</div>

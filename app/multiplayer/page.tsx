@@ -40,7 +40,7 @@ export default function MultiplayerPage() {
     setGameStarted(true)
   }
 
-  const handleBackToMenu = () => {
+  const handleBackToMainMenu = () => {
     router.push("/")
   }
 
@@ -50,7 +50,7 @@ export default function MultiplayerPage() {
         <AppHeader />
         <GameSession
           playerCharacter={playerRole as PlayerCharacter}
-          onBackToMenu={handleLeaveLobby}
+          onBackToMenu={handleBackToMainMenu}
           isMultiplayer={true}
           lobbyId={currentLobby}
           playerId={playerId}
@@ -68,6 +68,7 @@ export default function MultiplayerPage() {
           playerId={playerId}
           onLeaveLobby={handleLeaveLobby}
           onStartGame={handleStartGame}
+          onBackToMenu={handleBackToMainMenu}
         />
       </SceneBackground>
     )
@@ -76,7 +77,12 @@ export default function MultiplayerPage() {
   return (
     <SceneBackground>
       <AppHeader />
-      <LobbyBrowser playerId={playerId} playerName={playerName} onJoinLobby={handleJoinLobby} />
+      <LobbyBrowser
+        playerId={playerId}
+        playerName={playerName}
+        onJoinLobby={handleJoinLobby}
+        onBackToMenu={handleBackToMainMenu}
+      />
     </SceneBackground>
   )
 }
