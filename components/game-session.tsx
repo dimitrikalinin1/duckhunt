@@ -203,15 +203,16 @@ export default function GameSession({
   // AI thinking state
   const [aiThinking, setAiThinking] = useState(false)
 
-  // Multiplayer sync state
+  // Multiplayer state
   const [isLoading, setIsLoading] = useState(false)
   const [lastActionTimestamp, setLastActionTimestamp] = useState(0)
+  const [gameInitialized, setGameInitialized] = useState(false)
 
   // Helpers
   const canChangeLevel = turn === "pre-bets" || turn === "ended"
 
-  // Быстрая синхронизация для мультиплеера
-  const syncGameState = useCallback(async () => {
+  // Event-driven синхронизация - вызывается только после действий игрока
+  const syncAfterAction = useCallback(async () => {
     if (!isMultiplayer || !lobbyId) return
 
     try {
@@ -275,51 +276,43 @@ export default function GameSession({
     }
   }, [isMultiplayer, lobbyId, lastActionTimestamp, play])
 
-  // Инициализация игры для мультиплеера
+  // Инициализация игры для мультиплеера (только один раз)
   useEffect(() => {
-    if (!isMultiplayer || !lobbyId) return
+    if (!isMultiplayer || !lobbyId || gameInitialized) return
 
     const initGame = async () => {
       setIsLoading(true)
       await initializeGame(lobbyId)
-      await syncGameState()
+      await syncAfterAction()
+      setGameInitialized(true)
       setIsLoading(false)
     }
 
     initGame()
-  }, [isMultiplayer, lobbyId, syncGameState])
+  }, [isMultiplayer, lobbyId, gameInitialized, syncAfterAction])
 
-  // Регулярная синхронизация (более частая)
+  // Проверка на новые ходы противника (только когда не наш ход)
   useEffect(() => {
-    if (!isMultiplayer || !lobbyId) return
+    if (!isMultiplayer || !lobbyId || !gameInitialized) return
 
-    const interval = setInterval(syncGameState, 500) // Каждые 500мс
+    // Проверяем только если сейчас не наш ход
+    const shouldCheckForUpdates =
+      (turn === "duck-initial" && playerCharacter !== "duck") ||
+      (turn === "hunter" && playerCharacter !== "hunter") ||
+      (turn === "duck" && playerCharacter !== "duck")
+
+    if (!shouldCheckForUpdates) return
+
+    // Проверяем обновления каждые 2 секунды только когда ждем хода противника
+    const interval = setInterval(syncAfterAction, 2000)
     return () => clearInterval(interval)
-  }, [isMultiplayer, lobbyId, syncGameState])
-
-  // Автоматический первый ход утки в мультиплеере
-  useEffect(() => {
-    if (!isMultiplayer || !lobbyId || !playerId) return
-
-    const makeDuckFirstMove = async () => {
-      if (turn === "duck-initial" && playerCharacter === "duck" && !isLoading) {
-        setIsLoading(true)
-        await makeDuckInitialMove(lobbyId, playerId)
-        // Синхронизация произойдет автоматически через интервал
-        setIsLoading(false)
-      }
-    }
-
-    // Небольшая задержка для реалистичности
-    const timer = setTimeout(makeDuckFirstMove, 800)
-    return () => clearTimeout(timer)
-  }, [isMultiplayer, lobbyId, playerId, turn, playerCharacter, isLoading])
+  }, [isMultiplayer, lobbyId, gameInitialized, turn, playerCharacter, syncAfterAction])
 
   const resetRoundState = useCallback(
     (keepBets = true) => {
       if (isMultiplayer && lobbyId) {
         // В мультиплеере сбрасываем через сервер
-        resetGame(lobbyId)
+        resetGame(lobbyId).then(() => syncAfterAction())
         return
       }
 
@@ -358,7 +351,7 @@ export default function GameSession({
         setDuckBet(25)
       }
     },
-    [inv.hunter.extraAmmo, level.ammo, isMultiplayer, lobbyId],
+    [inv.hunter.extraAmmo, level.ammo, isMultiplayer, lobbyId, syncAfterAction],
   )
 
   useEffect(() => {
@@ -819,9 +812,7 @@ export default function GameSession({
   }
 
   // Actions
-  function handleDuckInitialChoose(cell: number) {
-    if (isMultiplayer) return // В мультиплеере это обрабатывается автоматически
-
+  async function handleDuckInitialChoose(cell: number) {
     console.log("=== Duck Initial Choose Debug ===")
     console.log("Turn:", turn)
     console.log("Cell:", cell)
@@ -834,6 +825,15 @@ export default function GameSession({
     }
     if (shotCells.has(cell)) {
       console.log("Cell already shot")
+      return
+    }
+
+    // В мультиплеере используем серверные действия
+    if (isMultiplayer && lobbyId && playerId) {
+      setIsLoading(true)
+      await makeDuckInitialMove(lobbyId, playerId)
+      await syncAfterAction() // Синхронизируемся после действия
+      setIsLoading(false)
       return
     }
 
@@ -882,6 +882,7 @@ export default function GameSession({
     if (isMultiplayer && lobbyId && playerId) {
       setIsLoading(true)
       await useBinoculars(lobbyId, playerId)
+      await syncAfterAction() // Синхронизируемся после действия
       setIsLoading(false)
       return
     }
@@ -917,6 +918,7 @@ export default function GameSession({
       setIsLoading(true)
       await makeHunterShot(lobbyId, playerId, cell, useAPBullet)
       setUseAPBullet(false)
+      await syncAfterAction() // Синхронизируемся после действия
       setIsLoading(false)
       return
     }
@@ -1003,6 +1005,7 @@ export default function GameSession({
     if (isMultiplayer && lobbyId && playerId) {
       setIsLoading(true)
       await makeDuckMove(lobbyId, playerId, "stay")
+      await syncAfterAction() // Синхронизируемся после действия
       setIsLoading(false)
       return
     }
@@ -1029,6 +1032,7 @@ export default function GameSession({
       setIsLoading(true)
       await makeDuckMove(lobbyId, playerId, "flight", cell)
       setIsFlightMode(false)
+      await syncAfterAction() // Синхронизируемся после действия
       setIsLoading(false)
       return
     }
@@ -1066,6 +1070,7 @@ export default function GameSession({
     if (isMultiplayer && lobbyId && playerId) {
       setIsLoading(true)
       await useDuckAbility(lobbyId, playerId, "rain")
+      await syncAfterAction() // Синхронизируемся после действия
       setIsLoading(false)
       return
     }
@@ -1084,6 +1089,7 @@ export default function GameSession({
       setIsLoading(true)
       await useDuckAbility(lobbyId, playerId, "safeFlight")
       setIsFlightMode(false)
+      await syncAfterAction() // Синхронизируемся после действия
       setIsLoading(false)
       return
     }
@@ -1163,7 +1169,7 @@ export default function GameSession({
     const prefix = `${characterName} • Уровень ${level.key}: ${level.name} • `
 
     if (isLoading) {
-      return prefix + "Загрузка..."
+      return prefix + "Обработка хода..."
     }
 
     if (!isMultiplayer && aiThinking) {
@@ -1341,7 +1347,7 @@ export default function GameSession({
                 <Badge variant="secondary">
                   {isMultiplayer
                     ? playerCharacter === "duck"
-                      ? "Автоматический выбор позиции..."
+                      ? "Выберите клетку для начальной позиции"
                       : "Ожидание хода утки..."
                     : "Выберите клетку для начальной позиции"}
                 </Badge>
