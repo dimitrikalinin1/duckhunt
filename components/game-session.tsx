@@ -107,9 +107,18 @@ function defaultInv(): Inv {
 type Props = {
   playerCharacter: PlayerCharacter
   onBackToMenu: () => void
+  isMultiplayer?: boolean
+  lobbyId?: string | null
+  playerId?: string
 }
 
-export default function GameSession({ playerCharacter, onBackToMenu }: Props) {
+export default function GameSession({
+  playerCharacter,
+  onBackToMenu,
+  isMultiplayer = false,
+  lobbyId,
+  playerId,
+}: Props) {
   const [levelKey, setLevelKey] = useState<LevelKey>(1)
   const level = LEVELS[levelKey]
   const totalCells = gridSize(level)
@@ -153,7 +162,10 @@ export default function GameSession({ playerCharacter, onBackToMenu }: Props) {
   const [inv, setInv] = useState<Inv>(defaultInv)
 
   // AI opponent
-  const ai = useMemo(() => createAI(playerCharacter === "hunter" ? "duck" : "hunter"), [playerCharacter])
+  const ai = useMemo(() => {
+    if (isMultiplayer) return null
+    return createAI(playerCharacter === "hunter" ? "duck" : "hunter")
+  }, [playerCharacter, isMultiplayer])
 
   // Round state
   const [activeCells, setActiveCells] = useState<number[]>([])
@@ -224,7 +236,10 @@ export default function GameSession({ playerCharacter, onBackToMenu }: Props) {
   )
 
   useEffect(() => {
-    console.log("Turn changed to:", turn, "Player character:", playerCharacter)
+    console.log("Turn changed to:", turn, "Player character:", playerCharacter, "Is multiplayer:", isMultiplayer)
+
+    // AI логика только для одиночной игры
+    if (isMultiplayer) return
 
     if (turn === "duck-initial" && playerCharacter === "hunter") {
       console.log("Starting AI duck initial move...")
@@ -243,7 +258,7 @@ export default function GameSession({ playerCharacter, onBackToMenu }: Props) {
       const timer = setTimeout(() => handleAIDuckAction(), 1000)
       return () => clearTimeout(timer)
     }
-  }, [turn, playerCharacter])
+  }, [turn, playerCharacter, isMultiplayer])
 
   function formatGold(n: number) {
     return `${Math.round(n)} 🪙`
@@ -410,6 +425,7 @@ export default function GameSession({ playerCharacter, onBackToMenu }: Props) {
       setCompassHint([])
     }
 
+    // ИЗМЕНЕНИЕ: Утка ходит первой
     setTurn("duck-initial")
   }
 
@@ -912,23 +928,33 @@ export default function GameSession({ playerCharacter, onBackToMenu }: Props) {
 
   const canClickCell = useCallback(
     (i: number) => {
-      if (!activeCells.includes(i) || aiThinking) return false
+      if (!activeCells.includes(i)) return false
+
+      // В мультиплеере блокируем клики только если не наш ход
+      if (isMultiplayer) {
+        if (turn === "duck-initial" && playerCharacter !== "duck") return false
+        if (turn === "hunter" && playerCharacter !== "hunter") return false
+        if (turn === "duck" && playerCharacter !== "duck") return false
+      } else {
+        // В одиночной игре блокируем во время хода ИИ
+        if (aiThinking) return false
+      }
 
       if (turn === "duck-initial") {
-        return playerCharacter === "duck" && !shotCells.has(i)
+        return !shotCells.has(i)
       }
 
       if (turn === "hunter") {
-        return playerCharacter === "hunter" && !shotCells.has(i)
+        return !shotCells.has(i)
       }
 
       if (turn === "duck" && isFlightMode) {
-        return playerCharacter === "duck" && (inv.duck.ghostFlight ? true : !shotCells.has(i))
+        return inv.duck.ghostFlight ? true : !shotCells.has(i)
       }
 
       return false
     },
-    [activeCells, isFlightMode, shotCells, turn, playerCharacter, inv.duck.ghostFlight, aiThinking],
+    [activeCells, isFlightMode, shotCells, turn, playerCharacter, inv.duck.ghostFlight, aiThinking, isMultiplayer],
   )
 
   function newRound() {
@@ -940,7 +966,7 @@ export default function GameSession({ playerCharacter, onBackToMenu }: Props) {
     const characterName = playerCharacter === "hunter" ? "Охотник" : "Утка"
     const prefix = `${characterName} • Уровень ${level.key}: ${level.name} • `
 
-    if (aiThinking) {
+    if (!isMultiplayer && aiThinking) {
       const aiCharacter = playerCharacter === "hunter" ? "ИИ-утка" : "ИИ-охотник"
       return prefix + `${aiCharacter} думает...`
     }
@@ -949,14 +975,35 @@ export default function GameSession({ playerCharacter, onBackToMenu }: Props) {
       case "pre-bets":
         return prefix + "Ставки и старт"
       case "duck-initial":
-        return prefix + (playerCharacter === "duck" ? "Выберите начальную позицию" : "ИИ-утка выбирает позицию...")
-      case "hunter":
-        return prefix + (playerCharacter === "hunter" ? "Ваш ход: выстрел или бинокль" : "Ход ИИ-охотника...")
-      case "duck":
-        if (playerCharacter === "duck") {
-          return prefix + (duckSnaredTurns > 0 ? "Утка в капкане: пропуск хода" : "Ваш ход: затаиться или перелёт")
+        if (isMultiplayer) {
+          return (
+            prefix +
+            (playerCharacter === "duck" ? "Ваш ход: выберите начальную позицию" : "Ход утки: ожидание выбора позиции")
+          )
         } else {
-          return prefix + "Ход ИИ-утки..."
+          return prefix + (playerCharacter === "duck" ? "Выберите начальную позицию" : "ИИ-утка выбирает позицию...")
+        }
+      case "hunter":
+        if (isMultiplayer) {
+          return (
+            prefix + (playerCharacter === "hunter" ? "Ваш ход: выстрел или бинокль" : "Ход охотника: ожидание действия")
+          )
+        } else {
+          return prefix + (playerCharacter === "hunter" ? "Ваш ход: выстрел или бинокль" : "Ход ИИ-охотника...")
+        }
+      case "duck":
+        if (isMultiplayer) {
+          if (playerCharacter === "duck") {
+            return prefix + (duckSnaredTurns > 0 ? "Утка в капкане: пропуск хода" : "Ваш ход: затаиться или перелёт")
+          } else {
+            return prefix + "Ход утки: ожидание действия"
+          }
+        } else {
+          if (playerCharacter === "duck") {
+            return prefix + (duckSnaredTurns > 0 ? "Утка в капкане: пропуск хода" : "Ваш ход: затаиться или перелёт")
+          } else {
+            return prefix + "Ход ИИ-утки..."
+          }
         }
       case "ended":
         if (!outcome) return prefix + "Раунд завершен"
@@ -964,7 +1011,7 @@ export default function GameSession({ playerCharacter, onBackToMenu }: Props) {
       default:
         return prefix
     }
-  }, [duckSnaredTurns, level.key, level.name, outcome, turn, playerCharacter, aiThinking])
+  }, [duckSnaredTurns, level.key, level.name, outcome, turn, playerCharacter, aiThinking, isMultiplayer])
 
   const rows = level.rows
   const cols = level.cols
@@ -1075,68 +1122,93 @@ export default function GameSession({ playerCharacter, onBackToMenu }: Props) {
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              {turn === "duck-initial" && playerCharacter === "duck" && (
-                <Badge variant="secondary">{"Выберите клетку для начальной позиции"}</Badge>
+              {turn === "duck-initial" && (
+                <Badge variant="secondary">
+                  {isMultiplayer
+                    ? playerCharacter === "duck"
+                      ? "Выберите клетку для начальной позиции"
+                      : "Ожидание хода утки..."
+                    : "Выберите клетку для начальной позиции"}
+                </Badge>
               )}
 
-              {turn === "hunter" && playerCharacter === "hunter" && (
+              {turn === "hunter" && (
                 <>
-                  <Button
-                    variant={inv.hunter.binoculars && !binocularUsedThisTurn ? "secondary" : "outline"}
-                    onClick={handleBinoculars}
-                    disabled={!inv.hunter.binoculars || binocularUsedThisTurn}
-                  >
-                    <Telescope className="mr-2 h-4 w-4" />
-                    {"Бинокль"}
-                  </Button>
-                  {level.key === 4 && inv.hunter.apBullet > 0 && (
-                    <Button variant={useAPBullet ? "secondary" : "outline"} onClick={() => setUseAPBullet((v) => !v)}>
-                      <Zap className="mr-2 h-4 w-4" />
-                      {`Бронебойный (${inv.hunter.apBullet})`}
-                    </Button>
-                  )}
-                  <Badge variant="outline" className="text-xs">
-                    {"Нажмите на клетку, чтобы выстрелить"}
-                    <Target className="inline-block ml-1 h-3 w-3" />
-                  </Badge>
-                </>
-              )}
-
-              {turn === "duck" && playerCharacter === "duck" && (
-                <>
-                  {duckSnaredTurns > 0 ? (
-                    <Badge variant="destructive">{"Капкан: пропуск хода"}</Badge>
-                  ) : (
+                  {playerCharacter === "hunter" ? (
                     <>
-                      <Button variant="secondary" onClick={handleDuckStay}>
-                        {"Затаиться"}
-                      </Button>
                       <Button
-                        onClick={startFlightMode}
-                        disabled={!inv.duck.flight && !inv.duck.safeFlight && !inv.duck.ghostFlight}
+                        variant={inv.hunter.binoculars && !binocularUsedThisTurn ? "secondary" : "outline"}
+                        onClick={handleBinoculars}
+                        disabled={!inv.hunter.binoculars || binocularUsedThisTurn}
                       >
-                        <MoveRight className="mr-2 h-4 w-4" />
-                        {"Перелет"}
+                        <Telescope className="mr-2 h-4 w-4" />
+                        {"Бинокль"}
                       </Button>
-                      {inv.duck.safeFlight && (
-                        <Button variant="outline" onClick={handleSafeFlight}>
-                          <Shield className="mr-2 h-4 w-4" />
-                          {"Безопасный"}
+                      {level.key === 4 && inv.hunter.apBullet > 0 && (
+                        <Button
+                          variant={useAPBullet ? "secondary" : "outline"}
+                          onClick={() => setUseAPBullet((v) => !v)}
+                        >
+                          <Zap className="mr-2 h-4 w-4" />
+                          {`Бронебойный (${inv.hunter.apBullet})`}
                         </Button>
                       )}
-                      {level.key === 4 && inv.duck.rain && !inv.duck.rainUsed && (
-                        <Button variant="outline" onClick={handleRain}>
-                          <CloudRain className="mr-2 h-4 w-4" />
-                          {"Дождь"}
-                        </Button>
-                      )}
-                      {isFlightMode && <Badge variant="outline">{"Выберите клетку для перелета"}</Badge>}
+                      <Badge variant="outline" className="text-xs">
+                        {"Нажмите на клетку, чтобы выстрелить"}
+                        <Target className="inline-block ml-1 h-3 w-3" />
+                      </Badge>
                     </>
-                  )}
+                  ) : isMultiplayer ? (
+                    <Badge variant="secondary" className="animate-pulse">
+                      Ход охотника...
+                    </Badge>
+                  ) : null}
                 </>
               )}
 
-              {aiThinking && (
+              {turn === "duck" && (
+                <>
+                  {playerCharacter === "duck" ? (
+                    <>
+                      {duckSnaredTurns > 0 ? (
+                        <Badge variant="destructive">{"Капкан: пропуск хода"}</Badge>
+                      ) : (
+                        <>
+                          <Button variant="secondary" onClick={handleDuckStay}>
+                            {"Затаиться"}
+                          </Button>
+                          <Button
+                            onClick={startFlightMode}
+                            disabled={!inv.duck.flight && !inv.duck.safeFlight && !inv.duck.ghostFlight}
+                          >
+                            <MoveRight className="mr-2 h-4 w-4" />
+                            {"Перелет"}
+                          </Button>
+                          {inv.duck.safeFlight && (
+                            <Button variant="outline" onClick={handleSafeFlight}>
+                              <Shield className="mr-2 h-4 w-4" />
+                              {"Безопасный"}
+                            </Button>
+                          )}
+                          {level.key === 4 && inv.duck.rain && !inv.duck.rainUsed && (
+                            <Button variant="outline" onClick={handleRain}>
+                              <CloudRain className="mr-2 h-4 w-4" />
+                              {"Дождь"}
+                            </Button>
+                          )}
+                          {isFlightMode && <Badge variant="outline">{"Выберите клетку для перелета"}</Badge>}
+                        </>
+                      )}
+                    </>
+                  ) : isMultiplayer ? (
+                    <Badge variant="secondary" className="animate-pulse">
+                      Ход утки...
+                    </Badge>
+                  ) : null}
+                </>
+              )}
+
+              {!isMultiplayer && aiThinking && (
                 <Badge variant="secondary" className="animate-pulse">
                   {turn === "hunter"
                     ? "ИИ-охотник думает..."
