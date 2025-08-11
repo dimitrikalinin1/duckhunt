@@ -3,6 +3,7 @@ export type GameState = {
   level: number
   activeCells: number[]
   shotCells: number[]
+  revealedEmptyByBinoculars?: number[]
   beaverCell: number | null
   wardenCell: number | null
   duckCell: number | null
@@ -17,6 +18,9 @@ export type GameState = {
   beaverVault: number
   wardenVault: number
   inventory: any
+  binocularUsedThisTurn?: boolean
+  compassHint?: number[]
+  duckSnaredTurns?: number
   lastAction?: {
     type: string
     playerId: string
@@ -45,11 +49,12 @@ export function createInitialGameState(lobbyId: string): GameState {
     level: 1,
     activeCells: [],
     shotCells: [],
+    revealedEmptyByBinoculars: [],
     beaverCell: null,
     wardenCell: null,
     duckCell: null,
     ammo: 3,
-    turn: "pre-bets",
+    turn: "duck-initial",
     outcome: null,
     hunterBet: 25,
     duckBet: 25,
@@ -58,6 +63,9 @@ export function createInitialGameState(lobbyId: string): GameState {
     bank: 0,
     beaverVault: 0,
     wardenVault: 0,
+    binocularUsedThisTurn: false,
+    compassHint: [],
+    duckSnaredTurns: 0,
     inventory: {
       hunter: {
         binoculars: false,
