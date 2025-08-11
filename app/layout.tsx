@@ -6,17 +6,17 @@ import { ThemeProvider } from "@/components/theme-provider"
 
 export const metadata: Metadata = {
   title: "Охотник vs Утка",
-  description: "Тактический прототип, Mini App Telegram поддерживается",
+  description: "Тактический прототип",
   generator: "v0.dev",
 }
 
-const sans = Inter({ subsets: ["latin", "cyrillic"] })
-const mono = JetBrains_Mono({ subsets: ["latin", "cyrillic"] })
+const inter = Inter({ subsets: ["latin", "cyrillic"], display: "swap" })
+const mono = JetBrains_Mono({ subsets: ["latin", "cyrillic"], display: "swap", variable: "--font-mono" })
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ru">
-      <body className={`${sans.className} ${mono.variable || ""}`}>
+    <html lang="ru" className={mono.variable}>
+      <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
         </ThemeProvider>
