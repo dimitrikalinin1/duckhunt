@@ -1,10 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { User, Target, Bird, Coins } from "lucide-react"
+import { User, Target, Bird, Coins, Crown, Star } from "lucide-react"
 import type { Player } from "@/lib/supabase/client"
 import { getOrCreatePlayer } from "@/lib/player-service"
 import { useTelegramUser } from "@/hooks/use-telegram-user"
@@ -44,93 +42,121 @@ export default function PlayerProfile() {
 
   if (loading || telegramLoading) {
     return (
-      <Card className="w-full max-w-md mx-auto">
-        <CardContent className="p-6">
-          <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-gray-300 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-300 rounded w-1/2"></div>
-            <div className="h-4 bg-gray-300 rounded w-full"></div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="card-game w-full max-w-md mx-auto animate-pulse">
+        <div className="p-8 space-y-4">
+          <div className="h-6 bg-gradient-to-r from-gray-300 to-gray-400 rounded-full"></div>
+          <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full w-3/4"></div>
+          <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full w-1/2"></div>
+        </div>
+      </div>
     )
   }
 
   if (!telegramUser) {
     return (
-      <Card className="w-full max-w-md mx-auto">
-        <CardContent className="p-6">
-          <p className="text-center text-gray-500">Приложение должно быть запущено в Telegram</p>
-        </CardContent>
-      </Card>
+      <div className="card-game w-full max-w-md mx-auto">
+        <div className="p-8 text-center">
+          <p className="text-gray-600 font-medium">Приложение должно быть запущено в Telegram</p>
+        </div>
+      </div>
     )
   }
 
   if (!player) {
     return (
-      <Card className="w-full max-w-md mx-auto">
-        <CardContent className="p-6">
-          <p className="text-center text-gray-500">Не удалось загрузить профиль игрока</p>
-        </CardContent>
-      </Card>
+      <div className="card-game w-full max-w-md mx-auto">
+        <div className="p-8 text-center">
+          <p className="text-gray-600 font-medium">Не удалось загрузить профиль игрока</p>
+        </div>
+      </div>
     )
   }
 
-  // Вычисляем прогресс до следующего уровня
   const hunterExpToNext = 100 - (player.hunter_experience % 100)
   const duckExpToNext = 100 - (player.duck_experience % 100)
   const hunterProgress = player.hunter_experience % 100
   const duckProgress = player.duck_experience % 100
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2">
-          <User className="h-5 w-5" />
-          {player.username}
-          {telegramUser.is_premium && (
-            <Badge variant="default" className="bg-blue-500">
-              Premium
-            </Badge>
-          )}
-        </CardTitle>
-        <div className="flex items-center gap-2">
-          <Coins className="h-4 w-4 text-yellow-500" />
-          <span className="font-medium">{player.coins} монет</span>
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-6">
-        {/* Охотник */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Target className="h-4 w-4 text-orange-500" />
-              <span className="font-medium">Охотник</span>
+    <div className="w-full max-w-md mx-auto space-y-6">
+      <div className="card-game p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+              <User className="h-6 w-6 text-white" />
             </div>
-            <Badge variant="secondary">Уровень {player.hunter_level}</Badge>
+            <div>
+              <h2 className="text-xl font-black text-gray-800">{player.username}</h2>
+              <div className="flex items-center gap-2">
+                {telegramUser.is_premium && (
+                  <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 text-xs">
+                    <Crown className="h-3 w-3 mr-1" />
+                    PREMIUM
+                  </Badge>
+                )}
+              </div>
+            </div>
           </div>
-          <Progress value={hunterProgress} className="h-2" />
-          <p className="text-xs text-gray-500">
-            {hunterProgress}/100 опыта (до следующего уровня: {hunterExpToNext})
-          </p>
+          <div className="text-right">
+            <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-2 rounded-full font-bold text-sm">
+              <Coins className="h-4 w-4" />
+              {player.coins}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        {/* Охотник */}
+        <div className="card-game p-5 hover:scale-105 transition-all duration-300">
+          <div className="text-center space-y-3">
+            <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center mx-auto animate-pulse-glow">
+              <Target className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <h3 className="font-black text-gray-800 text-lg">ОХОТНИК</h3>
+              <div className="flex items-center justify-center gap-1 mb-2">
+                <Star className="h-4 w-4 text-orange-500" />
+                <span className="font-bold text-orange-600">LVL {player.hunter_level}</span>
+              </div>
+              <div className="space-y-2">
+                <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-orange-500 to-red-600 rounded-full transition-all duration-500 progress-game"
+                    style={{ width: `${hunterProgress}%` }}
+                  ></div>
+                </div>
+                <p className="text-xs text-gray-600 font-medium">{hunterProgress}/100 XP</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Утка */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Bird className="h-4 w-4 text-blue-500" />
-              <span className="font-medium">Утка</span>
+        <div className="card-game p-5 hover:scale-105 transition-all duration-300">
+          <div className="text-center space-y-3">
+            <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center mx-auto animate-pulse-glow">
+              <Bird className="h-8 w-8 text-white" />
             </div>
-            <Badge variant="secondary">Уровень {player.duck_level}</Badge>
+            <div>
+              <h3 className="font-black text-gray-800 text-lg">УТКА</h3>
+              <div className="flex items-center justify-center gap-1 mb-2">
+                <Star className="h-4 w-4 text-cyan-500" />
+                <span className="font-bold text-cyan-600">LVL {player.duck_level}</span>
+              </div>
+              <div className="space-y-2">
+                <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full transition-all duration-500 progress-game"
+                    style={{ width: `${duckProgress}%` }}
+                  ></div>
+                </div>
+                <p className="text-xs text-gray-600 font-medium">{duckProgress}/100 XP</p>
+              </div>
+            </div>
           </div>
-          <Progress value={duckProgress} className="h-2" />
-          <p className="text-xs text-gray-500">
-            {duckProgress}/100 опыта (до следующего уровня: {duckExpToNext})
-          </p>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

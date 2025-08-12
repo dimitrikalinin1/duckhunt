@@ -27,7 +27,7 @@ importers:
         specifier: latest
         version: 0.10.0(@supabase/supabase-js@2.55.0)
       '@supabase/supabase-js':
-        specifier: latest
+        specifier: ^2.39.0
         version: 2.55.0
       class-variance-authority:
         specifier: ^0.7.1

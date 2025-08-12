@@ -1,7 +1,24 @@
-import { supabase, type Player, type InventoryItem } from "./supabase/client"
+import { supabase, isSupabaseConfigured, type Player, type InventoryItem } from "./supabase/client"
 
 // Получить или создать игрока по Telegram ID
 export async function getOrCreatePlayer(telegramId: number, username?: string): Promise<Player | null> {
+  // Если Supabase не настроен, возвращаем тестового игрока
+  if (!isSupabaseConfigured) {
+    console.warn("Supabase not configured, returning mock player")
+    return {
+      id: `mock-${telegramId}`,
+      telegram_id: telegramId,
+      username: username || `Player${telegramId}`,
+      coins: 100,
+      hunter_level: 1,
+      hunter_experience: 0,
+      duck_level: 1,
+      duck_experience: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+  }
+
   try {
     console.log("Searching for player with telegram_id:", telegramId)
 
@@ -10,7 +27,7 @@ export async function getOrCreatePlayer(telegramId: number, username?: string): 
       .from("players")
       .select("*")
       .eq("telegram_id", telegramId)
-      .maybeSingle() // используем maybeSingle вместо single для избежания ошибки если записи нет
+      .maybeSingle()
 
     if (findError) {
       console.error("Error finding player:", findError)
@@ -54,6 +71,11 @@ export async function getOrCreatePlayer(telegramId: number, username?: string): 
 
 // Получить инвентарь игрока
 export async function getPlayerInventory(playerId: string): Promise<InventoryItem[]> {
+  if (!isSupabaseConfigured) {
+    console.warn("Supabase not configured, returning empty inventory")
+    return []
+  }
+
   try {
     console.log("Fetching inventory for player:", playerId)
 
@@ -74,6 +96,11 @@ export async function getPlayerInventory(playerId: string): Promise<InventoryIte
 
 // Добавить предмет в инвентарь
 export async function addItemToInventory(playerId: string, itemType: string, quantity = 1): Promise<boolean> {
+  if (!isSupabaseConfigured) {
+    console.warn("Supabase not configured, skipping inventory update")
+    return true // Возвращаем true для имитации успеха
+  }
+
   try {
     console.log("Adding item to inventory:", { playerId, itemType, quantity })
 
@@ -117,6 +144,11 @@ export async function addItemToInventory(playerId: string, itemType: string, qua
 }
 
 export async function updatePlayerCoins(playerId: string, newCoins: number): Promise<boolean> {
+  if (!isSupabaseConfigured) {
+    console.warn("Supabase not configured, skipping coins update")
+    return true
+  }
+
   try {
     console.log("Updating player coins:", { playerId, newCoins })
 
@@ -141,6 +173,11 @@ export async function updatePlayerExperience(
   role: "hunter" | "duck",
   experienceGained: number,
 ): Promise<boolean> {
+  if (!isSupabaseConfigured) {
+    console.warn("Supabase not configured, skipping experience update")
+    return true
+  }
+
   try {
     console.log("Updating player experience:", { playerId, role, experienceGained })
 
