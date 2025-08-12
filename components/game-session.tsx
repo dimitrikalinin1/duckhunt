@@ -69,6 +69,19 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
     overlays[gameState.duckCell] = { ...overlays[gameState.duckCell], duck: true }
   }
 
+  const [isMyTurn, setIsMyTurn] = useState(() => {
+    return gameState.turn === "duck-initial" && playerCharacter === "duck"
+  })
+
+  const updateTurnState = useCallback(() => {
+    const newIsMyTurn =
+      (gameState.turn === "duck-initial" && playerCharacter === "duck") ||
+      (gameState.turn === "hunter" && playerCharacter === "hunter") ||
+      (gameState.turn === "duck" && playerCharacter === "duck")
+
+    setIsMyTurn(newIsMyTurn)
+  }, [gameState.turn, playerCharacter])
+
   const handleBinoculars = useCallback(() => {
     if (gameState.turn !== "hunter" || binocularUsedThisTurn || !inv.hunter.binoculars) {
       return
@@ -107,6 +120,11 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
 
   const handleCellClick = useCallback(
     (cellIndex: number) => {
+      if (!isMyTurn) {
+        addNotification("❌ Сейчас не ваш ход!")
+        return
+      }
+
       if (gameState.turn === "duck-initial" && playerCharacter === "duck") {
         // Утка выбирает начальную позицию
         setGameState((prev) => ({
@@ -114,7 +132,9 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
           duckCell: cellIndex,
           turn: "hunter",
         }))
-        addNotification("Утка выбрала позицию! Ход охотника.")
+        addNotification("🦆 Утка выбрала позицию! Ход переходит к охотнику.")
+
+        setTimeout(() => updateTurnState(), 100)
       } else if (gameState.turn === "hunter" && playerCharacter === "hunter") {
         // Охотник стреляет
         const shotId = Date.now()
@@ -141,8 +161,10 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
         } else if (newShotCells.length >= inv.hunter.shots) {
           addNotification("💥 Патроны закончились! Утка победила!")
         } else {
-          addNotification("❌ Промах! Ход утки.")
+          addNotification("❌ Промах! Ход переходит к утке.")
         }
+
+        setTimeout(() => updateTurnState(), 100)
       } else if (gameState.turn === "duck" && playerCharacter === "duck") {
         // Утка перемещается
         if (!gameState.shotCells.includes(cellIndex) && !gameState.binocularsUsedCells.includes(cellIndex)) {
@@ -152,7 +174,9 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
             turn: "hunter",
           }))
           setBinocularUsedThisTurn(false)
-          addNotification("🦆 Утка переместилась! Ход охотника.")
+          addNotification("🦆 Утка переместилась! Ход переходит к охотнику.")
+
+          setTimeout(() => updateTurnState(), 100)
         } else {
           addNotification("❌ Нельзя переместиться в эту клетку!")
         }
@@ -167,11 +191,15 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
       inv.hunter.shots,
       play,
       soundEnabled,
+      isMyTurn,
+      updateTurnState,
     ],
   )
 
   const canClick = useCallback(
     (cellIndex: number) => {
+      if (!isMyTurn) return false
+
       if (gameState.turn === "duck-initial" && playerCharacter === "duck") {
         return true
       } else if (gameState.turn === "hunter" && playerCharacter === "hunter") {
@@ -181,7 +209,7 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
       }
       return false
     },
-    [gameState.turn, gameState.shotCells, gameState.binocularsUsedCells, playerCharacter],
+    [gameState.turn, gameState.shotCells, gameState.binocularsUsedCells, playerCharacter, isMyTurn],
   )
 
   const addNotification = (message: string) => {
@@ -221,6 +249,16 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
+      <div
+        className={`text-center p-4 mb-4 rounded-lg font-bold text-lg ${
+          isMyTurn
+            ? "bg-green-100 text-green-800 border-2 border-green-300"
+            : "bg-gray-100 text-gray-600 border-2 border-gray-300"
+        }`}
+      >
+        {getCurrentTurnText()}
+      </div>
+
       {notifications.length > 0 && (
         <div className="bg-blue-100 border border-blue-300 rounded-lg p-3 mb-4">
           {notifications.map((notification, index) => (
