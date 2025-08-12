@@ -207,6 +207,18 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
     setNotifications([])
   }
 
+  const getCurrentTurnText = () => {
+    if (gameState.turn === "duck-initial") {
+      return playerCharacter === "duck" ? "🦆 Ваш ход! Выберите начальную позицию утки" : "⏳ Ожидание хода утки..."
+    } else if (gameState.turn === "hunter") {
+      return playerCharacter === "hunter" ? "🏹 Ваш ход! Выберите клетку для выстрела" : "⏳ Ожидание хода охотника..."
+    } else if (gameState.turn === "duck") {
+      return playerCharacter === "duck" ? "🦆 Ваш ход! Переместите утку" : "⏳ Ожидание хода утки..."
+    } else {
+      return "🎯 Игра окончена"
+    }
+  }
+
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
       {notifications.length > 0 && (
@@ -238,17 +250,32 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
         </div>
       </div>
 
+      <Card className="mb-6">
+        <CardContent className="py-4">
+          <div className="text-center">
+            <div className="text-xl font-bold text-primary mb-2">{getCurrentTurnText()}</div>
+            {gameState.turn === "duck-initial" && playerCharacter === "duck" && (
+              <div className="text-sm text-muted-foreground">
+                Кликните на любую клетку игрового поля, чтобы разместить утку
+              </div>
+            )}
+            {gameState.turn === "hunter" && playerCharacter === "hunter" && (
+              <div className="text-sm text-muted-foreground">
+                Кликните на клетку, чтобы выстрелить. Осталось патронов: {inv.hunter.shots - gameState.shotCells.length}
+              </div>
+            )}
+            {gameState.turn === "duck" && playerCharacter === "duck" && (
+              <div className="text-sm text-muted-foreground">Кликните на свободную клетку, чтобы переместить утку</div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle className="text-center">
-                Игровое поле
-                {gameState.turn === "duck-initial" && playerCharacter === "duck" && " - Выберите начальную позицию"}
-                {gameState.turn === "hunter" && playerCharacter === "hunter" && " - Ваш ход, стреляйте!"}
-                {gameState.turn === "duck" && playerCharacter === "duck" && " - Ваш ход, переместитесь!"}
-                {gameState.turn === "ended" && " - Игра окончена"}
-              </CardTitle>
+              <CardTitle className="text-center">Игровое поле</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="max-w-md mx-auto">
@@ -262,6 +289,56 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
                   onCellClick={handleCellClick}
                 />
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle>{playerCharacter === "hunter" ? "Инвентарь охотника" : "Инвентарь утки"}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {playerCharacter === "hunter" ? (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span>Патроны:</span>
+                    <Badge variant="outline" className="text-lg">
+                      {inv.hunter.shots - gameState.shotCells.length}/{inv.hunter.shots}
+                    </Badge>
+                  </div>
+
+                  {inv.hunter.binoculars && (
+                    <Button
+                      variant={!binocularUsedThisTurn ? "secondary" : "outline"}
+                      onClick={handleBinocularsWithSound}
+                      disabled={gameState.turn !== "hunter" || binocularUsedThisTurn}
+                      className="w-full"
+                    >
+                      <Telescope className="mr-2 h-4 w-4" />
+                      Бинокль {binocularUsedThisTurn && "(использован)"}
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span>Базовый полет:</span>
+                    <Badge variant={inv.duck.flight ? "default" : "outline"}>
+                      {inv.duck.flight ? "Доступен" : "Недоступен"}
+                    </Badge>
+                  </div>
+
+                  {gameState.duckCell >= 0 && (
+                    <div className="flex justify-between items-center">
+                      <span>Текущая позиция:</span>
+                      <Badge variant="secondary">Клетка {gameState.duckCell + 1}</Badge>
+                    </div>
+                  )}
+
+                  <div className="text-sm text-muted-foreground">
+                    💡 Вы можете перемещаться в любую свободную клетку
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -285,34 +362,6 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
             </CardContent>
           </Card>
 
-          {playerCharacter === "hunter" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Инвентарь охотника</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span>Патроны:</span>
-                  <Badge variant="outline">
-                    {inv.hunter.shots - gameState.shotCells.length}/{inv.hunter.shots}
-                  </Badge>
-                </div>
-
-                {inv.hunter.binoculars && (
-                  <Button
-                    variant={!binocularUsedThisTurn ? "secondary" : "outline"}
-                    onClick={handleBinocularsWithSound}
-                    disabled={gameState.turn !== "hunter" || binocularUsedThisTurn}
-                    className="w-full"
-                  >
-                    <Telescope className="mr-2 h-4 w-4" />
-                    Бинокль {binocularUsedThisTurn && "(использован)"}
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
           {gameState.gameOver && (
             <Card>
               <CardHeader>
@@ -321,7 +370,7 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
               <CardContent>
                 <div className="text-center space-y-4">
                   <div className="text-lg font-semibold">
-                    {gameState.hunterWins > gameState.duckWins ? "Охотник победил!" : "Утка победила!"}
+                    {gameState.hunterWins > gameState.duckWins ? "🏹 Охотник победил!" : "🦆 Утка победила!"}
                   </div>
                   <Button onClick={handleNewGame} className="w-full">
                     Новая игра
