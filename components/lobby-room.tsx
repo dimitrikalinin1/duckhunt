@@ -116,6 +116,17 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
     setCoins(newCoins)
   }
 
+  const handleReadyToggle = async () => {
+    try {
+      const result = await selectRole(lobbyId, playerId, currentPlayer?.role || null)
+      if (result.success && result.lobby) {
+        setLobby(result.lobby)
+      }
+    } catch (error) {
+      console.error("Ошибка при изменении готовности:", error)
+    }
+  }
+
   if (!lobby) {
     return (
       <div className="container mx-auto p-4 md:p-6 lg:p-8">
@@ -251,17 +262,12 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
         {currentPlayer?.role && lobby.status === "waiting" && (
           <div className="mb-6 text-center">
             <Button
-              onClick={async () => {
-                const result = await selectRole(lobbyId, playerId, currentPlayer.role)
-                if (result.success && result.lobby) {
-                  setLobby(result.lobby)
-                }
-              }}
+              onClick={handleReadyToggle}
               size="lg"
               className="px-8 py-3 text-lg font-semibold bg-green-600 hover:bg-green-700 text-white"
               disabled={!currentPlayer.role}
             >
-              ✓ Готов к игре!
+              ✓ {currentPlayer.ready ? "Готов!" : "Готов к игре!"}
             </Button>
           </div>
         )}

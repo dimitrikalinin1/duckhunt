@@ -114,7 +114,7 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
           duckCell: cellIndex,
           turn: "hunter",
         }))
-        addNotification("Утка выбрала позицию!")
+        addNotification("Утка выбрала позицию! Ход охотника.")
       } else if (gameState.turn === "hunter" && playerCharacter === "hunter") {
         // Охотник стреляет
         const shotId = Date.now()
@@ -137,11 +137,11 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
         }
 
         if (hit) {
-          addNotification("Попадание! Охотник победил!")
+          addNotification("🎯 Попадание! Охотник победил!")
         } else if (newShotCells.length >= inv.hunter.shots) {
-          addNotification("Патроны закончились! Утка победила!")
+          addNotification("💥 Патроны закончились! Утка победила!")
         } else {
-          addNotification("Промах! Ход утки.")
+          addNotification("❌ Промах! Ход утки.")
         }
       } else if (gameState.turn === "duck" && playerCharacter === "duck") {
         // Утка перемещается
@@ -152,7 +152,9 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
             turn: "hunter",
           }))
           setBinocularUsedThisTurn(false)
-          addNotification("Утка переместилась!")
+          addNotification("🦆 Утка переместилась! Ход охотника.")
+        } else {
+          addNotification("❌ Нельзя переместиться в эту клетку!")
         }
       }
     },
@@ -226,6 +228,9 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
         <div className="flex items-center gap-4">
           <Badge variant="outline" className="text-lg px-3 py-1">
             Раунд {gameState.round}
+          </Badge>
+          <Badge variant={playerCharacter === "hunter" ? "default" : "secondary"} className="text-lg px-3 py-1">
+            {playerCharacter === "hunter" ? "🏹 Охотник" : "🦆 Утка"}
           </Badge>
           <Button variant="ghost" size="sm" onClick={() => setSoundEnabled(!soundEnabled)}>
             {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}

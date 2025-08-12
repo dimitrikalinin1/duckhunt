@@ -28,6 +28,14 @@ export async function selectRole(lobbyId: string, playerId: string, role: "hunte
   return { success: true, lobby }
 }
 
+export async function setPlayerReady(lobbyId: string, playerId: string, ready: boolean) {
+  const lobby = updateLobby(lobbyId, { type: "ready", playerId, ready })
+  if (!lobby) {
+    return { success: false, error: "Не удалось изменить статус готовности" }
+  }
+  return { success: true, lobby }
+}
+
 export async function getLobbyState(lobbyId: string) {
   const lobby = getLobby(lobbyId)
   return { success: true, lobby }
