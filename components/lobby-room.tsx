@@ -252,17 +252,16 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
           <div className="mb-6 text-center">
             <Button
               onClick={async () => {
-                // Логика подтверждения готовности
                 const result = await selectRole(lobbyId, playerId, currentPlayer.role)
                 if (result.success && result.lobby) {
                   setLobby(result.lobby)
                 }
               }}
               size="lg"
-              className="px-8 py-3 text-lg font-semibold"
+              className="px-8 py-3 text-lg font-semibold bg-green-600 hover:bg-green-700 text-white"
               disabled={!currentPlayer.role}
             >
-              Готов к игре!
+              ✓ Готов к игре!
             </Button>
           </div>
         )}
