@@ -118,8 +118,10 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
 
   const handleReadyToggle = async () => {
     try {
+      console.log("Переключение готовности для игрока:", playerId)
       const result = await selectRole(lobbyId, playerId, currentPlayer?.role || null)
       if (result.success && result.lobby) {
+        console.log("Обновленное лобби:", result.lobby)
         setLobby(result.lobby)
       }
     } catch (error) {
@@ -261,13 +263,23 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
 
         {currentPlayer?.role && lobby.status === "waiting" && (
           <div className="mb-6 text-center">
+            <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
+              <div className="text-amber-800 dark:text-amber-200 font-medium mb-2">⚠️ Подтвердите готовность к игре</div>
+              <div className="text-sm text-amber-600 dark:text-amber-400">
+                Игра начнется только после того, как оба игрока нажмут "Готов"
+              </div>
+            </div>
             <Button
               onClick={handleReadyToggle}
               size="lg"
-              className="px-8 py-3 text-lg font-semibold bg-green-600 hover:bg-green-700 text-white"
+              className={`px-8 py-4 text-xl font-bold transition-all ${
+                currentPlayer.ready
+                  ? "bg-green-600 hover:bg-green-700 text-white animate-pulse"
+                  : "bg-blue-600 hover:bg-blue-700 text-white"
+              }`}
               disabled={!currentPlayer.role}
             >
-              ✓ {currentPlayer.ready ? "Готов!" : "Готов к игре!"}
+              {currentPlayer.ready ? "✅ Готов! Ожидание соперника..." : "🎯 Готов к игре!"}
             </Button>
           </div>
         )}
@@ -317,14 +329,16 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
           {lobby.status === "waiting" && (
             <div className="text-muted-foreground">
               {lobby.players.length < 2
-                ? "Ожидание второго игрока..."
-                : lobby.players.every((p) => p.role && p.ready)
-                  ? "Все готовы! Игра скоро начнется..."
-                  : "Выберите роли для начала игры"}
+                ? "⏳ Ожидание второго игрока..."
+                : !lobby.players.every((p) => p.role)
+                  ? "🎭 Выберите роли для продолжения"
+                  : !lobby.players.every((p) => p.ready)
+                    ? "⚡ Нажмите 'Готов' для начала игры"
+                    : "🚀 Все готовы! Запуск игры..."}
             </div>
           )}
           {lobby.status === "countdown" && (
-            <div className="text-green-600 font-medium">Игра начинается через {countdown} секунд!</div>
+            <div className="text-green-600 font-bold text-lg">🎯 Игра начинается через {countdown} секунд!</div>
           )}
         </div>
       </div>

@@ -250,130 +250,109 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
         </div>
       </div>
 
-      <Card className="mb-6">
-        <CardContent className="py-4">
-          <div className="text-center">
-            <div className="text-xl font-bold text-primary mb-2">{getCurrentTurnText()}</div>
-            {gameState.turn === "duck-initial" && playerCharacter === "duck" && (
-              <div className="text-sm text-muted-foreground">
-                Кликните на любую клетку игрового поля, чтобы разместить утку
-              </div>
-            )}
-            {gameState.turn === "hunter" && playerCharacter === "hunter" && (
-              <div className="text-sm text-muted-foreground">
-                Кликните на клетку, чтобы выстрелить. Осталось патронов: {inv.hunter.shots - gameState.shotCells.length}
-              </div>
-            )}
-            {gameState.turn === "duck" && playerCharacter === "duck" && (
-              <div className="text-sm text-muted-foreground">Кликните на свободную клетку, чтобы переместить утку</div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="max-w-4xl mx-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-center">Игровое поле</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="max-w-md mx-auto">
+              <GameBoard
+                rows={rows}
+                cols={cols}
+                activeCells={activeCells}
+                overlays={overlays}
+                lastShotAnim={lastShotAnim}
+                canClick={canClick}
+                onCellClick={handleCellClick}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>{playerCharacter === "hunter" ? "Инвентарь охотника" : "Инвентарь утки"}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {playerCharacter === "hunter" ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                  <span className="font-medium">Патроны:</span>
+                  <Badge variant="outline" className="text-lg">
+                    {inv.hunter.shots - gameState.shotCells.length}/{inv.hunter.shots}
+                  </Badge>
+                </div>
+
+                {inv.hunter.binoculars && (
+                  <Button
+                    variant={!binocularUsedThisTurn ? "secondary" : "outline"}
+                    onClick={handleBinocularsWithSound}
+                    disabled={gameState.turn !== "hunter" || binocularUsedThisTurn}
+                    className="p-3 h-auto"
+                  >
+                    <Telescope className="mr-2 h-4 w-4" />
+                    Бинокль {binocularUsedThisTurn && "(использован)"}
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                  <span className="font-medium">Базовый полет:</span>
+                  <Badge variant={inv.duck.flight ? "default" : "outline"}>{inv.duck.flight ? "✓" : "✗"}</Badge>
+                </div>
+
+                {gameState.duckCell >= 0 && (
+                  <div className="flex justify-between items-center p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                    <span className="font-medium">Позиция:</span>
+                    <Badge variant="secondary">Клетка {gameState.duckCell + 1}</Badge>
+                  </div>
+                )}
+
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                  <div className="text-sm text-muted-foreground text-center">💡 Избегайте обстрелянных клеток</div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="grid md:grid-cols-2 gap-6 mt-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-center">Игровое поле</CardTitle>
+              <CardTitle>Счет матча</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="max-w-md mx-auto">
-                <GameBoard
-                  rows={rows}
-                  cols={cols}
-                  activeCells={activeCells}
-                  overlays={overlays}
-                  lastShotAnim={lastShotAnim}
-                  canClick={canClick}
-                  onCellClick={handleCellClick}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="mt-4">
-            <CardHeader>
-              <CardTitle>{playerCharacter === "hunter" ? "Инвентарь охотника" : "Инвентарь утки"}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {playerCharacter === "hunter" ? (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span>Патроны:</span>
-                    <Badge variant="outline" className="text-lg">
-                      {inv.hunter.shots - gameState.shotCells.length}/{inv.hunter.shots}
-                    </Badge>
-                  </div>
-
-                  {inv.hunter.binoculars && (
-                    <Button
-                      variant={!binocularUsedThisTurn ? "secondary" : "outline"}
-                      onClick={handleBinocularsWithSound}
-                      disabled={gameState.turn !== "hunter" || binocularUsedThisTurn}
-                      className="w-full"
-                    >
-                      <Telescope className="mr-2 h-4 w-4" />
-                      Бинокль {binocularUsedThisTurn && "(использован)"}
-                    </Button>
-                  )}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-2 rounded">
+                  <span className="flex items-center gap-2">🏹 Охотник:</span>
+                  <Badge variant="default" className="text-lg px-3 py-1">
+                    {gameState.hunterWins}
+                  </Badge>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span>Базовый полет:</span>
-                    <Badge variant={inv.duck.flight ? "default" : "outline"}>
-                      {inv.duck.flight ? "Доступен" : "Недоступен"}
-                    </Badge>
-                  </div>
-
-                  {gameState.duckCell >= 0 && (
-                    <div className="flex justify-between items-center">
-                      <span>Текущая позиция:</span>
-                      <Badge variant="secondary">Клетка {gameState.duckCell + 1}</Badge>
-                    </div>
-                  )}
-
-                  <div className="text-sm text-muted-foreground">
-                    💡 Вы можете перемещаться в любую свободную клетку
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Счет</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>Охотник:</span>
-                  <Badge variant="default">{gameState.hunterWins}</Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span>Утка:</span>
-                  <Badge variant="secondary">{gameState.duckWins}</Badge>
+                <div className="flex justify-between items-center p-2 rounded">
+                  <span className="flex items-center gap-2">🦆 Утка:</span>
+                  <Badge variant="secondary" className="text-lg px-3 py-1">
+                    {gameState.duckWins}
+                  </Badge>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {gameState.gameOver && (
-            <Card>
+            <Card className="border-green-500 bg-green-50 dark:bg-green-950">
               <CardHeader>
-                <CardTitle>Игра окончена</CardTitle>
+                <CardTitle className="text-green-700 dark:text-green-300">🎯 Раунд завершен!</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center space-y-4">
-                  <div className="text-lg font-semibold">
+                  <div className="text-xl font-bold text-green-600 dark:text-green-400">
                     {gameState.hunterWins > gameState.duckWins ? "🏹 Охотник победил!" : "🦆 Утка победила!"}
                   </div>
-                  <Button onClick={handleNewGame} className="w-full">
-                    Новая игра
+                  <Button onClick={handleNewGame} className="w-full" size="lg">
+                    🔄 Следующий раунд
                   </Button>
                 </div>
               </CardContent>

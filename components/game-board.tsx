@@ -102,6 +102,16 @@ export default function GameBoard({ rows, cols, activeCells, overlays, lastShotA
               </div>
             )}
 
+            {/* Показываем утку с улучшенной визуализацией */}
+            {o.duck && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="relative">
+                  <div className="text-4xl drop-shadow-lg animate-bounce">🦆</div>
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                </div>
+              </div>
+            )}
+
             {playShotAnim && <ShotSmoke keyId={lastShotAnim!.id} />}
           </button>
         )
