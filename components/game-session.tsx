@@ -1,10 +1,18 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { Telescope, ArrowLeft, Volume2, VolumeX } from "lucide-react"
 import GameBoard, { type CellOverlay } from "./game-board"
 import { useSound } from "use-sound"
 import type { PlayerCharacter } from "@/lib/ai-opponent"
+import {
+  getGameStateAction,
+  makeDuckInitialMove,
+  makeHunterShot,
+  makeDuckMove,
+  useBinoculars as useBinocularsAction,
+  initializeGame,
+} from "@/app/game/actions"
 
 type Props = {
   playerCharacter: PlayerCharacter
@@ -14,50 +22,151 @@ type Props = {
   playerId?: string
 }
 
-export default function GameSession({ playerCharacter, onBackToMenu, isMultiplayer = false }: Props) {
-  const [gameState, setGameState] = useState({
-    turn: "duck-initial" as "duck-initial" | "hunter" | "duck" | "ended",
-    duckCell: -1,
-    shotCells: [] as number[],
-    revealedEmptyByBinoculars: [] as number[],
-    binocularsUsedCells: [] as number[],
-    round: 1,
-    hunterWins: 0,
-    duckWins: 0,
-    gameOver: false,
-  })
-
-  const [inv, setInv] = useState({
-    hunter: { shots: 3, binoculars: true },
-    duck: { flight: true },
-  })
-
-  const [binocularUsedThisTurn, setBinocularUsedThisTurn] = useState(false)
+export default function GameSession({
+  playerCharacter,
+  onBackToMenu,
+  isMultiplayer = false,
+  lobbyId,
+  playerId,
+}: Props) {
+  const [gameState, setGameState] = useState<any>(null)
   const [soundEnabled, setSoundEnabled] = useState(true)
-  const [notifications, setNotifications] = useState<string[]>([])
   const [lastShotAnim, setLastShotAnim] = useState<{ cell: number; id: number } | null>(null)
+  const [loading, setLoading] = useState(true)
 
   const [play] = useSound("/sounds/shot.mp3", { volume: soundEnabled ? 0.5 : 0 })
 
-  const activeCells = [0, 1, 2, 3, 4, 5, 6, 7, 8] // 3x3 grid
+  const handleCellClick = useCallback(
+    async (cellIndex: number) => {
+      if (!gameState || !lobbyId || !playerId) return
+
+      const isMyTurn =
+        (gameState.turn === "duck-initial" && playerCharacter === "duck") ||
+        (gameState.turn === "hunter" && playerCharacter === "hunter") ||
+        (gameState.turn === "duck" && playerCharacter === "duck")
+
+      if (!isMyTurn) return
+
+      try {
+        let result
+
+        if (gameState.turn === "duck-initial" && playerCharacter === "duck") {
+          result = await makeDuckInitialMove(lobbyId, playerId)
+        } else if (gameState.turn === "hunter" && playerCharacter === "hunter") {
+          if (gameState.shotCells?.includes(cellIndex)) return
+
+          const shotId = Date.now()
+          setLastShotAnim({ cell: cellIndex, id: shotId })
+
+          result = await makeHunterShot(lobbyId, playerId, cellIndex)
+        } else if (gameState.turn === "duck" && playerCharacter === "duck") {
+          if (gameState.shotCells?.includes(cellIndex) || gameState.binocularsUsedCells?.includes(cellIndex)) {
+            return
+          }
+
+          result = await makeDuckMove(lobbyId, playerId, "flight", cellIndex)
+        }
+
+        if (result?.success && result.state) {
+          setGameState(result.state)
+        }
+      } catch (error) {
+        console.error("Failed to make move:", error)
+      }
+    },
+    [gameState, playerCharacter, lobbyId, playerId],
+  )
+
+  const handleBinoculars = useCallback(async () => {
+    if (
+      !lobbyId ||
+      !playerId ||
+      !gameState ||
+      gameState.turn !== "hunter" ||
+      gameState.binocularUsedThisTurn ||
+      !gameState.inventory?.hunter?.binoculars
+    ) {
+      return
+    }
+
+    try {
+      const result = await useBinocularsAction(lobbyId, playerId)
+      if (result.success && result.state) {
+        setGameState(result.state)
+      }
+    } catch (error) {
+      console.error("Failed to use binoculars:", error)
+    }
+    play()
+  }, [lobbyId, playerId, gameState, play])
+
+  useEffect(() => {
+    const initGame = async () => {
+      if (!lobbyId) return
+
+      try {
+        let result = await getGameStateAction(lobbyId)
+
+        if (!result.state) {
+          result = await initializeGame(lobbyId)
+        }
+
+        if (result.success && result.state) {
+          setGameState(result.state)
+        }
+      } catch (error) {
+        console.error("Failed to initialize game:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    initGame()
+  }, [lobbyId])
+
+  useEffect(() => {
+    if (!lobbyId || !isMultiplayer) return
+
+    const interval = setInterval(async () => {
+      try {
+        const result = await getGameStateAction(lobbyId)
+        if (result.success && result.state) {
+          setGameState(result.state)
+        }
+      } catch (error) {
+        console.error("Failed to sync game state:", error)
+      }
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [lobbyId, isMultiplayer])
+
+  if (loading || !gameState) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-white text-xl">Загрузка игры...</div>
+      </div>
+    )
+  }
+
+  const activeCells = gameState.activeCells || [0, 1, 2, 3, 4, 5, 6, 7, 8]
   const rows = 3
   const cols = 3
 
   const overlays: Record<number, CellOverlay> = {}
-
-  activeCells.forEach((i) => {
+  activeCells.forEach((i: number) => {
     overlays[i] = {}
   })
 
-  gameState.shotCells.forEach((i) => {
+  gameState.shotCells?.forEach((i: number) => {
     overlays[i] = { ...overlays[i], shot: true }
   })
 
-  gameState.revealedEmptyByBinoculars.forEach((i) => {
+  gameState.revealedEmptyByBinoculars?.forEach((i: number) => {
     overlays[i] = { ...overlays[i], revealedEmpty: true }
   })
 
-  gameState.binocularsUsedCells.forEach((i) => {
+  gameState.binocularsUsedCells?.forEach((i: number) => {
     overlays[i] = { ...overlays[i], binocularsUsed: true }
   })
 
@@ -65,177 +174,40 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
     overlays[gameState.duckCell] = { ...overlays[gameState.duckCell], duck: true }
   }
 
-  const [isMyTurn, setIsMyTurn] = useState(() => {
-    return gameState.turn === "duck-initial" && playerCharacter === "duck"
-  })
-
-  const updateTurnState = useCallback(() => {
-    const newIsMyTurn =
-      (gameState.turn === "duck-initial" && playerCharacter === "duck") ||
-      (gameState.turn === "hunter" && playerCharacter === "hunter") ||
-      (gameState.turn === "duck" && playerCharacter === "duck")
-
-    setIsMyTurn(newIsMyTurn)
-  }, [gameState.turn, playerCharacter])
-
-  const handleBinoculars = useCallback(() => {
-    if (gameState.turn !== "hunter" || binocularUsedThisTurn || !inv.hunter.binoculars) {
-      return
-    }
-
-    const emptyCells = activeCells.filter((i) => i !== gameState.duckCell && !gameState.shotCells.includes(i))
-
-    if (emptyCells.length > 0) {
-      const revealedCells = emptyCells.slice(0, 2)
-
-      setGameState((prev) => ({
-        ...prev,
-        revealedEmptyByBinoculars: [...prev.revealedEmptyByBinoculars, ...revealedCells],
-        binocularsUsedCells: [...prev.binocularsUsedCells, ...revealedCells],
-      }))
-
-      setBinocularUsedThisTurn(true)
-      addNotification("Бинокль показал пустые клетки!")
-    }
-  }, [
-    gameState.turn,
-    binocularUsedThisTurn,
-    inv.hunter.binoculars,
-    gameState.duckCell,
-    gameState.shotCells,
-    activeCells,
-  ])
-
-  const handleBinocularsWithSound = useCallback(() => {
-    handleBinoculars()
-    if (soundEnabled) {
-      play()
-    }
-  }, [handleBinoculars, play, soundEnabled])
-
-  const handleCellClick = useCallback(
-    (cellIndex: number) => {
-      if (!isMyTurn) {
-        addNotification("Сейчас не ваш ход!")
-        return
-      }
-
-      if (gameState.turn === "duck-initial" && playerCharacter === "duck") {
-        setGameState((prev) => ({
-          ...prev,
-          duckCell: cellIndex,
-          turn: "hunter",
-        }))
-        addNotification("Утка выбрала позицию! Ход переходит к охотнику.")
-
-        setTimeout(() => updateTurnState(), 100)
-      } else if (gameState.turn === "hunter" && playerCharacter === "hunter") {
-        const shotId = Date.now()
-        setLastShotAnim({ cell: cellIndex, id: shotId })
-
-        const newShotCells = [...gameState.shotCells, cellIndex]
-        const hit = cellIndex === gameState.duckCell
-
-        setGameState((prev) => ({
-          ...prev,
-          shotCells: newShotCells,
-          turn: hit ? "ended" : "duck",
-          hunterWins: hit ? prev.hunterWins + 1 : prev.hunterWins,
-          duckWins: hit ? prev.duckWins : newShotCells.length >= inv.hunter.shots ? prev.duckWins + 1 : prev.duckWins,
-          gameOver: hit || newShotCells.length >= inv.hunter.shots,
-        }))
-
-        if (soundEnabled) {
-          play()
-        }
-
-        if (hit) {
-          addNotification("Попадание! Охотник победил!")
-        } else if (newShotCells.length >= inv.hunter.shots) {
-          addNotification("Патроны закончились! Утка победила!")
-        } else {
-          addNotification("Промах! Ход переходит к утке.")
-        }
-
-        setTimeout(() => updateTurnState(), 100)
-      } else if (gameState.turn === "duck" && playerCharacter === "duck") {
-        if (!gameState.shotCells.includes(cellIndex) && !gameState.binocularsUsedCells.includes(cellIndex)) {
-          setGameState((prev) => ({
-            ...prev,
-            duckCell: cellIndex,
-            turn: "hunter",
-          }))
-          setBinocularUsedThisTurn(false)
-          addNotification("Утка переместилась! Ход переходит к охотнику.")
-
-          setTimeout(() => updateTurnState(), 100)
-        } else {
-          addNotification("Нельзя переместиться в эту клетку!")
-        }
-      }
-    },
-    [
-      gameState.turn,
-      gameState.duckCell,
-      gameState.shotCells,
-      gameState.binocularsUsedCells,
-      playerCharacter,
-      inv.hunter.shots,
-      play,
-      soundEnabled,
-      isMyTurn,
-      updateTurnState,
-    ],
-  )
+  const isMyTurn =
+    (gameState.turn === "duck-initial" && playerCharacter === "duck") ||
+    (gameState.turn === "hunter" && playerCharacter === "hunter") ||
+    (gameState.turn === "duck" && playerCharacter === "duck")
 
   const canClick = useCallback(
     (cellIndex: number) => {
       if (!isMyTurn) return false
 
       if (gameState.turn === "duck-initial" && playerCharacter === "duck") {
-        return true
+        return activeCells.includes(cellIndex)
       } else if (gameState.turn === "hunter" && playerCharacter === "hunter") {
-        return !gameState.shotCells.includes(cellIndex)
+        return activeCells.includes(cellIndex) && !gameState.shotCells?.includes(cellIndex)
       } else if (gameState.turn === "duck" && playerCharacter === "duck") {
-        return !gameState.shotCells.includes(cellIndex) && !gameState.binocularsUsedCells.includes(cellIndex)
+        return (
+          activeCells.includes(cellIndex) &&
+          !gameState.shotCells?.includes(cellIndex) &&
+          !gameState.binocularsUsedCells?.includes(cellIndex)
+        )
       }
       return false
     },
-    [gameState.turn, gameState.shotCells, gameState.binocularsUsedCells, playerCharacter, isMyTurn],
+    [gameState.turn, gameState.shotCells, gameState.binocularsUsedCells, playerCharacter, isMyTurn, activeCells],
   )
-
-  const addNotification = (message: string) => {
-    setNotifications((prev) => [...prev, message])
-    setTimeout(() => {
-      setNotifications((prev) => prev.slice(1))
-    }, 3000)
-  }
-
-  const handleNewGame = () => {
-    setGameState({
-      turn: "duck-initial",
-      duckCell: -1,
-      shotCells: [],
-      revealedEmptyByBinoculars: [],
-      binocularsUsedCells: [],
-      round: gameState.round + 1,
-      hunterWins: gameState.hunterWins,
-      duckWins: gameState.duckWins,
-      gameOver: false,
-    })
-    setBinocularUsedThisTurn(false)
-    setNotifications([])
-  }
 
   const getCurrentTurnText = () => {
     if (gameState.turn === "duck-initial") {
-      return playerCharacter === "duck" ? "Ваш ход! Выберите начальную позицию утки" : "Ожидание хода утки..."
+      return playerCharacter === "duck" ? "🎯 Ваш ход! Выберите начальную позицию утки" : "⏳ Ожидание хода утки..."
     } else if (gameState.turn === "hunter") {
-      return playerCharacter === "hunter" ? "Ваш ход! Выберите клетку для выстрела" : "Ожидание хода охотника..."
+      return playerCharacter === "hunter" ? "🎯 Ваш ход! Выберите клетку для выстрела" : "⏳ Ожидание хода охотника..."
     } else if (gameState.turn === "duck") {
-      return playerCharacter === "duck" ? "Ваш ход! Переместите утку" : "Ожидание хода утки..."
+      return playerCharacter === "duck" ? "🎯 Ваш ход! Переместите утку" : "⏳ Ожидание хода утки..."
     } else {
-      return "Игра окончена"
+      return "🏁 Игра окончена"
     }
   }
 
@@ -251,9 +223,6 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
           </button>
 
           <div className="flex items-center gap-4">
-            <div className="px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-xl text-slate-300">
-              Раунд {gameState.round}
-            </div>
             <div
               className={`px-4 py-2 rounded-xl font-bold ${
                 playerCharacter === "hunter"
@@ -289,9 +258,9 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
           <div className="text-slate-300">{getCurrentTurnText()}</div>
         </div>
 
-        {notifications.length > 0 && (
+        {gameState.notifications && gameState.notifications.length > 0 && (
           <div className="game-card border-blue-500/50 bg-gradient-to-r from-blue-900/20 to-cyan-900/20 mb-6 animate-slide-in">
-            {notifications.map((notification, index) => (
+            {gameState.notifications.map((notification: string, index: number) => (
               <div key={index} className="text-blue-300 font-medium text-lg">
                 {notification}
               </div>
@@ -344,21 +313,22 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
                   <div className="flex justify-between items-center p-3 bg-slate-800/50 rounded-xl">
                     <span className="text-slate-300">💥 Патроны:</span>
                     <div className="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-lg font-bold">
-                      {inv.hunter.shots - gameState.shotCells.length}/{inv.hunter.shots}
+                      {gameState.ammo || 0}
                     </div>
                   </div>
 
-                  {inv.hunter.binoculars && (
+                  {gameState.inventory?.hunter?.binoculars && (
                     <button
-                      onClick={handleBinocularsWithSound}
-                      disabled={gameState.turn !== "hunter" || binocularUsedThisTurn}
+                      onClick={handleBinoculars}
+                      disabled={gameState.turn !== "hunter" || gameState.binocularUsedThisTurn}
                       className={`w-full p-3 rounded-xl font-bold transition-all ${
-                        !binocularUsedThisTurn && gameState.turn === "hunter"
+                        !gameState.binocularUsedThisTurn && gameState.turn === "hunter"
                           ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:scale-105 shadow-lg shadow-blue-500/25"
                           : "bg-slate-700 text-slate-400 cursor-not-allowed"
                       }`}
                     >
-                      <Telescope className="inline mr-2 h-4 w-4" />🔍 Бинокль {binocularUsedThisTurn && "(использован)"}
+                      <Telescope className="inline mr-2 h-4 w-4" />🔍 Бинокль{" "}
+                      {gameState.binocularUsedThisTurn && "(использован)"}
                     </button>
                   )}
                 </div>
@@ -366,9 +336,7 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-3 bg-slate-800/50 rounded-xl">
                     <span className="text-slate-300">✈️ Базовый полет:</span>
-                    <div className="px-3 py-1 bg-green-500/20 text-green-400 rounded-lg font-bold">
-                      {inv.duck.flight ? "✓ Активен" : "✗ Недоступен"}
-                    </div>
+                    <div className="px-3 py-1 bg-green-500/20 text-green-400 rounded-lg font-bold">✓ Активен</div>
                   </div>
 
                   {gameState.duckCell >= 0 && (
@@ -387,39 +355,21 @@ export default function GameSession({ playerCharacter, onBackToMenu, isMultiplay
               )}
             </div>
 
-            <div className="game-card">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-2xl">
-                  🏆
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-white">Счет матча</h3>
-                  <p className="text-slate-400 text-sm">Победы в раундах</p>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-amber-900/20 rounded-xl border border-amber-500/30">
-                  <span className="text-amber-300 font-bold">🏹 Охотник</span>
-                  <div className="text-2xl font-bold text-amber-400">{gameState.hunterWins}</div>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-emerald-900/20 rounded-xl border border-emerald-500/30">
-                  <span className="text-emerald-300 font-bold">🦆 Утка</span>
-                  <div className="text-2xl font-bold text-emerald-400">{gameState.duckWins}</div>
-                </div>
-              </div>
-            </div>
-
-            {gameState.gameOver && (
+            {gameState.outcome && (
               <div className="game-card border-green-500/50 bg-gradient-to-r from-green-900/20 to-emerald-900/20 animate-pulse-glow">
                 <div className="text-center space-y-4">
                   <div className="text-6xl animate-bounce">🎯</div>
                   <div className="text-2xl font-bold text-green-400">
-                    {gameState.hunterWins > gameState.duckWins ? "🏹 Охотник победил!" : "🦆 Утка победила!"}
+                    {gameState.outcome.winner === "hunter" ? "🏹 Охотник победил!" : "🦆 Утка победила!"}
                   </div>
-                  <button onClick={handleNewGame} className="game-button-primary w-full">
-                    🔄 Следующий раунд
-                  </button>
+                  <div className="text-slate-300">
+                    {gameState.outcome.reason === "hunter-shot-duck" && "Охотник подстрелил утку!"}
+                    {gameState.outcome.reason === "hunter-out-of-ammo" && "У охотника закончились патроны!"}
+                    {gameState.outcome.reason === "duck-hit-beaver" && "Утка попала на бобра!"}
+                    {gameState.outcome.reason === "duck-hit-warden" && "Утка попала на смотрителя!"}
+                    {gameState.outcome.reason === "hunter-hit-beaver" && "Охотник подстрелил бобра!"}
+                    {gameState.outcome.reason === "hunter-hit-warden" && "Охотник подстрелил смотрителя!"}
+                  </div>
                 </div>
               </div>
             )}
