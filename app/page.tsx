@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Users, Package } from "lucide-react"
+import { useTelegramUser } from "@/hooks/use-telegram-user"
 import type { PlayerCharacter } from "@/lib/ai-opponent"
 
 export default function Page() {
@@ -18,9 +19,7 @@ export default function Page() {
   const [gameMode, setGameMode] = useState<"single" | "multi" | null>(null)
   const [showInventory, setShowInventory] = useState(false)
   const router = useRouter()
-
-  const mockTelegramId = 123456789
-  const mockUsername = "TestPlayer"
+  const { user: telegramUser, isLoading } = useTelegramUser()
 
   const handleBackToMenu = () => {
     setSelectedCharacter(null)
@@ -29,6 +28,28 @@ export default function Page() {
 
   const handleMultiplayer = () => {
     router.push("/multiplayer")
+  }
+
+  if (isLoading) {
+    return (
+      <SceneBackground>
+        <div className="container mx-auto p-4 md:p-6 lg:p-8">
+          <div className="mx-auto max-w-4xl space-y-6">
+            <div className="flex justify-center">
+              <Card className="w-full max-w-md mx-auto">
+                <CardContent className="p-6">
+                  <div className="animate-pulse space-y-4">
+                    <div className="h-4 bg-gray-300 rounded w-3/4"></div>
+                    <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+                    <div className="h-4 bg-gray-300 rounded w-full"></div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </SceneBackground>
+    )
   }
 
   if (gameMode === "single" && selectedCharacter) {
@@ -52,7 +73,7 @@ export default function Page() {
       <div className="container mx-auto p-4 md:p-6 lg:p-8">
         <div className="mx-auto max-w-4xl space-y-6">
           <div className="flex justify-center">
-            <PlayerProfile telegramId={mockTelegramId} username={mockUsername} />
+            <PlayerProfile />
           </div>
 
           <div className="flex justify-center">
@@ -67,7 +88,7 @@ export default function Page() {
                 <DialogHeader>
                   <DialogTitle>Мой инвентарь</DialogTitle>
                 </DialogHeader>
-                <Inventory playerId="mock-player-id" />
+                <Inventory playerId={telegramUser?.id.toString() || ""} />
               </DialogContent>
             </Dialog>
           </div>
