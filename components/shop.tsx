@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { addItemToInventory } from "@/lib/player-service"
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -44,9 +45,10 @@ type Props = {
   coins: number
   purchasedItems: string[]
   onPurchase: (itemId: string, price: number) => void
+  playerId?: string // добавляем playerId для сохранения в базу данных
 }
 
-export default function Shop({ playerRole, coins, purchasedItems, onPurchase }: Props) {
+export default function Shop({ playerRole, coins, purchasedItems, onPurchase, playerId }: Props) {
   const [selectedCategory, setSelectedCategory] = useState<"all" | "hunter" | "duck">("all")
 
   const filteredItems = SHOP_ITEMS.filter((item) => {
@@ -60,9 +62,15 @@ export default function Shop({ playerRole, coins, purchasedItems, onPurchase }: 
     return item.category === playerRole || item.category === "universal"
   })
 
-  const handlePurchase = (item: ShopItem) => {
-    if (coins >= item.price && !purchasedItems.includes(item.id)) {
-      onPurchase(item.id, item.price)
+  const handlePurchase = async (item: ShopItem) => {
+    if (coins >= item.price && !purchasedItems.includes(item.id) && playerId) {
+      try {
+        await addItemToInventory(playerId, item.id, 1)
+        onPurchase(item.id, item.price)
+      } catch (error) {
+        console.error("Ошибка при покупке предмета:", error)
+        alert("Не удалось купить предмет. Попробуйте еще раз.")
+      }
     }
   }
 

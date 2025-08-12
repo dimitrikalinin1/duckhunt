@@ -9,6 +9,7 @@ import Image from "next/image"
 import { getLobbyState, leaveLobby, selectRole } from "@/app/lobby/actions"
 import type { Lobby, PlayerRole } from "@/lib/lobby-types"
 import Shop from "./shop"
+import { useRouter } from "next/navigation"
 
 type Props = {
   lobbyId: string
@@ -24,6 +25,7 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
   const [copied, setCopied] = useState(false)
   const [coins, setCoins] = useState(100) // Начальные монеты
   const [purchasedItems, setPurchasedItems] = useState<string[]>([])
+  const router = useRouter()
 
   const loadLobbyState = async () => {
     const result = await getLobbyState(lobbyId)
@@ -133,6 +135,10 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
     }
   }
 
+  const handleBackToMainMenu = () => {
+    router.push("/")
+  }
+
   if (!lobby) {
     return (
       <div className="container mx-auto p-4 md:p-6 lg:p-8">
@@ -152,6 +158,9 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
             <Button variant="outline" onClick={handleLeaveLobby}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Покинуть лобби
+            </Button>
+            <Button variant="ghost" onClick={handleBackToMainMenu}>
+              Главное меню
             </Button>
           </div>
 
@@ -182,6 +191,7 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
               coins={coins}
               purchasedItems={purchasedItems}
               onPurchase={handlePurchase}
+              playerId={playerId} // передаем playerId в магазин
             />
           </div>
         )}

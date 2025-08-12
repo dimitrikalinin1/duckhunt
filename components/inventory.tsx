@@ -21,7 +21,9 @@ const itemIcons: Record<string, React.ReactNode> = {
 
 const itemNames: Record<string, string> = {
   binoculars: "Бинокль",
+  "improved-binoculars": "Бинокль", // добавляем соответствие для ID из магазина
   armored_feather: "Бронированное перо",
+  "armored-feather": "Бронированное перо", // добавляем соответствие для ID из магазина
   extra_shots: "Дополнительные выстрелы",
 }
 
