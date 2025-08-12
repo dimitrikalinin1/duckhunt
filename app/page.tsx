@@ -5,15 +5,22 @@ import { useRouter } from "next/navigation"
 import SceneBackground from "@/components/scene-background"
 import CharacterSelect from "@/components/character-select"
 import GameSession from "@/components/game-session"
+import PlayerProfile from "@/components/player-profile"
+import Inventory from "@/components/inventory"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Users, Package } from "lucide-react"
 import type { PlayerCharacter } from "@/lib/ai-opponent"
 
 export default function Page() {
   const [selectedCharacter, setSelectedCharacter] = useState<PlayerCharacter | null>(null)
   const [gameMode, setGameMode] = useState<"single" | "multi" | null>(null)
+  const [showInventory, setShowInventory] = useState(false)
   const router = useRouter()
+
+  const mockTelegramId = 123456789
+  const mockUsername = "TestPlayer"
 
   const handleBackToMenu = () => {
     setSelectedCharacter(null)
@@ -43,7 +50,29 @@ export default function Page() {
   return (
     <SceneBackground>
       <div className="container mx-auto p-4 md:p-6 lg:p-8">
-        <div className="mx-auto max-w-4xl">
+        <div className="mx-auto max-w-4xl space-y-6">
+          <div className="flex justify-center">
+            <PlayerProfile telegramId={mockTelegramId} username={mockUsername} />
+          </div>
+
+          <div className="flex justify-center">
+            <Dialog open={showInventory} onOpenChange={setShowInventory}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="lg" className="flex items-center gap-2 bg-transparent">
+                  <Package className="h-5 w-5" />
+                  Инвентарь
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Мой инвентарь</DialogTitle>
+                </DialogHeader>
+                <Inventory playerId="mock-player-id" />
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {/* Существующая карточка многопользовательской игры */}
           <div className="grid justify-center">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
               <CardHeader className="text-center">

@@ -6,7 +6,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Coins, ShoppingCart, Zap, Shield, Eye, Footprints } from "lucide-react"
+import { Coins, ShoppingCart, Eye, Shield } from "lucide-react"
 
 type ShopItem = {
   id: string
@@ -20,40 +20,22 @@ type ShopItem = {
 
 const SHOP_ITEMS: ShopItem[] = [
   {
-    id: "extra-shot",
-    name: "Дополнительный выстрел",
-    description: "Получите +1 выстрел в игре",
-    price: 50,
-    icon: <Zap className="h-4 w-4" />,
-    category: "hunter",
-    effect: "+1 выстрел",
-  },
-  {
     id: "improved-binoculars",
-    name: "Улучшенный бинокль",
-    description: "Бинокль показывает 2 клетки вместо 1",
-    price: 75,
+    name: "Бинокль",
+    description: "Позволяет подсветить клетку и увидеть что в ней",
+    price: 30,
     icon: <Eye className="h-4 w-4" />,
     category: "hunter",
-    effect: "Бинокль +1 клетка",
+    effect: "Разведка клетки",
   },
   {
-    id: "ghost-flight",
-    name: "Призрачный полет",
-    description: "Можете лететь через обстрелянные клетки",
-    price: 60,
-    icon: <Footprints className="h-4 w-4" />,
-    category: "duck",
-    effect: "Полет через выстрелы",
-  },
-  {
-    id: "stealth-mode",
-    name: "Режим скрытности",
-    description: "Охотник не узнает о вашем перелете",
-    price: 80,
+    id: "armored-feather",
+    name: "Бронированное перо",
+    description: "Защищает от одного выстрела в игре",
+    price: 40,
     icon: <Shield className="h-4 w-4" />,
     category: "duck",
-    effect: "Скрытый перелет",
+    effect: "Защита от выстрела",
   },
 ]
 
