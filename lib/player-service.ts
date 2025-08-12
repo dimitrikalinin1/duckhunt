@@ -116,6 +116,25 @@ export async function addItemToInventory(playerId: string, itemType: string, qua
   }
 }
 
+export async function updatePlayerCoins(playerId: string, newCoins: number): Promise<boolean> {
+  try {
+    console.log("Updating player coins:", { playerId, newCoins })
+
+    const { error } = await supabase.from("players").update({ coins: newCoins }).eq("id", playerId)
+
+    if (error) {
+      console.error("Error updating player coins:", error)
+      return false
+    }
+
+    console.log("Successfully updated player coins")
+    return true
+  } catch (error) {
+    console.error("Error in updatePlayerCoins:", error)
+    return false
+  }
+}
+
 // Обновить опыт игрока
 export async function updatePlayerExperience(
   playerId: string,

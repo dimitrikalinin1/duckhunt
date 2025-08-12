@@ -1280,6 +1280,16 @@ export default function GameSession({
     return levelOk && hunterBet === duckBet && hunterBet > 0 && hunterBet <= Math.min(hunter.gold, duck.gold)
   }, [hunterBet, duckBet, hunter.gold, duck.gold, hunter.level, duck.level, levelKey])
 
+  const playerRole = useMemo(() => {
+    return playerCharacter
+  }, [playerCharacter])
+
+  const gameState = useMemo(() => {
+    return {
+      duckCell: duckCell,
+    }
+  }, [duckCell])
+
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
       {notifications.length > 0 && (
@@ -1363,32 +1373,9 @@ export default function GameSession({
                       ? "Недостаточно средств/уровня"
                       : "Начать раунд"}
                 </Button>
-                <ShopDialog
-                  level={level}
-                  inv={inv}
-                  prices={SHOP}
-                  balances={{ hunter: hunter.gold, duck: duck.gold }}
-                  buy={buy}
-                  buyFeatherRank={buyFeatherRank}
-                  playerCharacter={playerCharacter}
-                />
               </div>
             )}
 
-            {/* Магазин всегда доступен в мультиплеере */}
-            {isMultiplayer && (
-              <div className="mb-3 flex justify-end">
-                <ShopDialog
-                  level={level}
-                  inv={inv}
-                  prices={SHOP}
-                  balances={{ hunter: hunter.gold, duck: duck.gold }}
-                  buy={buy}
-                  buyFeatherRank={buyFeatherRank}
-                  playerCharacter={playerCharacter}
-                />
-              </div>
-            )}
 
             <div className="relative">
               <FeatherBurst show={showFeathers} />
@@ -1400,8 +1387,9 @@ export default function GameSession({
                 lastShotAnim={lastShotAnim}
                 canClick={canClickCell}
                 onCellClick={onCellClick}
+                playerRole={playerRole}
+                duckPosition={gameState?.duckCell}
               />
-            </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
               {turn === "duck-initial" && (
@@ -1670,15 +1658,15 @@ function ShopDialog({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className={cn("rounded-lg border p-3", playerCharacter !== "hunter" && "opacity-60")}>
             <div className="mb-2 flex items-center gap-2">
-              <Image src="/images/emoji/hunter-grin.png" alt="Охотник" width={22} height={22} />
-              <div className="font-medium">{"Охотник"}</div>
+              <Image src="/images/emoji/hunter-grin.png" alt="Охотник\" width={22} height={22} />
+              <div className="font-medium">{"Охотник\"}</div>
               <div className="ml-auto text-xs text-muted-foreground">{`Баланс: ${balances.hunter} 🪙`}</div>
             </div>
             <ShopRow
               icon="/images/ui/binoculars.png"
               title="Бинокль"
-              desc={`Открывает ${inv.hunter.binocularsPlus ? "2" : "1"} пустые клетки`}
-              price={prices.binoculars}
+              desc={`Открывает ${inv.hunter.binocularsPlus ? "2" : "1"} пустые клетки`}\
+              price={prices.binoculars}\
               owned={inv.hunter.binoculars}
               onBuy={() => buy("binoculars", "hunter")}
               disabled={playerCharacter !== "hunter"}
@@ -1691,12 +1679,12 @@ function ShopDialog({
                   desc="Подсвечивает область с Бобром"
                   price={prices.compass}
                   owned={inv.hunter.compass}
-                  onBuy={() => buy("compass", "hunter")}
+                  onBuy={() => buy("compass", "hunter")}\
                   disabled={playerCharacter !== "hunter"}
                 />
                 <ShopRow
-                  icon="/images/ui/trap.png"
-                  title="Капкан"
+                  icon="/images/ui/trap.png\"\
+                  title=\"Капкан"
                   desc="Обездвиживает Утку на 1 ход"
                   price={prices.trap}
                   owned={inv.hunter.trap}
@@ -1718,13 +1706,13 @@ function ShopDialog({
               title="Перелёт"
               desc="Перемещение на любую клетку"
               price={prices.flight}
-              owned={inv.duck.flight}
-              onBuy={() => buy("flight", "duck")}
+              owned={inv.duck.flight}\
+              onBuy={() => buy("flight", "duck")}\
               disabled={playerCharacter !== "duck"}
             />
             <ShopRow
               icon="/images/ui/shield-feather.png"
-              title={`Бронированное перо R${inv.duck.armoredFeatherRank + 1}`}
+              title={\`Бронированное перо R${inv.duck.armoredFeatherRank + 1}`}
               desc="Возврат части ставки при проигрыше"
               price={prices.featherRank[inv.duck.armoredFeatherRank] ?? 0}
               owned={inv.duck.armoredFeatherRank >= 9}
@@ -1757,8 +1745,8 @@ function ShopRow({
 }) {
   return (
     <div className="flex items-center justify-between py-2">
-      <div className="flex items-center gap-3 min-w-0">
-        <Image src={icon || "/placeholder.svg"} alt={title} width={28} height={28} />
+      <div className="flex items-center gap-3 min-w-0">\
+        <Image src={icon || "/placeholder.svg\"} alt={title} width={28} height={28} />
         <div className="min-w-0">
           <div className="text-sm font-medium truncate">{title}</div>
           <div className="text-xs text-muted-foreground truncate">{desc}</div>
@@ -1771,5 +1759,5 @@ function ShopRow({
         </Button>
       </div>
     </div>
-  )
+  )\
 }

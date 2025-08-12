@@ -9,7 +9,6 @@ import Image from "next/image"
 import { getLobbyState, leaveLobby, selectRole } from "@/app/lobby/actions"
 import type { Lobby, PlayerRole } from "@/lib/lobby-types"
 import Shop from "./shop"
-import { useRouter } from "next/navigation"
 
 type Props = {
   lobbyId: string
@@ -23,16 +22,14 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
   const [lobby, setLobby] = useState<Lobby | null>(null)
   const [countdown, setCountdown] = useState<number | null>(null)
   const [copied, setCopied] = useState(false)
-  const [coins, setCoins] = useState(100) // Начальные монеты
+  const [coins, setCoins] = useState(100)
   const [purchasedItems, setPurchasedItems] = useState<string[]>([])
-  const router = useRouter()
 
   const loadLobbyState = async () => {
     const result = await getLobbyState(lobbyId)
     if (result.success && result.lobby) {
       setLobby(result.lobby)
 
-      // Проверяем статус игры
       if (result.lobby.status === "playing") {
         const currentPlayer = result.lobby.players.find((p) => p.id === playerId)
         if (currentPlayer) {
@@ -44,11 +41,10 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
 
   useEffect(() => {
     loadLobbyState()
-    const interval = setInterval(loadLobbyState, 1000) // Обновляем каждую секунду
+    const interval = setInterval(loadLobbyState, 1000)
     return () => clearInterval(interval)
   }, [lobbyId, playerId])
 
-  // Обратный отсчет
   useEffect(() => {
     if (lobby?.status === "countdown" && lobby.countdownStarted) {
       const updateCountdown = () => {
@@ -76,19 +72,11 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
 
   const handleSelectRole = async (role: PlayerRole) => {
     try {
-      console.log("Выбираем роль:", role, "для игрока:", playerId)
       const result = await selectRole(lobbyId, playerId, role)
-      console.log("Результат выбора роли:", result)
 
       if (result.success && result.lobby) {
         setLobby(result.lobby)
-        console.log("Обновлено состояние лобби:", result.lobby)
-        console.log(
-          "Текущий игрок после обновления:",
-          result.lobby.players.find((p) => p.id === playerId),
-        )
       } else {
-        console.error("Ошибка выбора роли:", result.error)
         alert(result.error || "Не удалось выбрать роль")
       }
     } catch (error) {
@@ -99,15 +87,11 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
 
   const handleDeselectRole = async () => {
     try {
-      console.log("Отменяем выбор роли для игрока:", playerId)
       const result = await selectRole(lobbyId, playerId, null)
-      console.log("Результат отмены роли:", result)
 
       if (result.success && result.lobby) {
         setLobby(result.lobby)
-        console.log("Обновлено состояние лобби после отмены:", result.lobby)
       } else {
-        console.error("Ошибка отмены роли:", result.error)
         alert(result.error || "Не удалось отменить выбор роли")
       }
     } catch (error) {
@@ -122,21 +106,27 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleBackToMenu = () => {
-    if (onBackToMenu) {
-      onBackToMenu()
-    }
-  }
-
   const handlePurchase = (itemId: string, price: number) => {
     if (coins >= price && !purchasedItems.includes(itemId)) {
-      setCoins((prev) => prev - price)
       setPurchasedItems((prev) => [...prev, itemId])
     }
   }
 
-  const handleBackToMainMenu = () => {
-    router.push("/")
+  const handleCoinsUpdate = (newCoins: number) => {
+    setCoins(newCoins)
+  }
+
+  const handleToggleReady = async () => {
+    if (!currentPlayer?.role) return
+
+    try {
+      const result = await selectRole(lobbyId, playerId, currentPlayer.role)
+      if (result.success && result.lobby) {
+        setLobby(result.lobby)
+      }
+    } catch (error) {
+      console.error("Ошибка при изменении готовности:", error)
+    }
   }
 
   if (!lobby) {
@@ -148,7 +138,6 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
   }
 
   const currentPlayer = lobby.players.find((p) => p.id === playerId)
-  const otherPlayer = lobby.players.find((p) => p.id !== playerId)
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
@@ -158,9 +147,6 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
             <Button variant="outline" onClick={handleLeaveLobby}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Покинуть лобби
-            </Button>
-            <Button variant="ghost" onClick={handleBackToMainMenu}>
-              Главное меню
             </Button>
           </div>
 
@@ -173,7 +159,6 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
           </div>
         </div>
 
-        {/* Обратный отсчет */}
         {countdown !== null && (
           <Card className="mb-6 border-green-500 bg-green-50 dark:bg-green-950">
             <CardContent className="text-center py-8">
@@ -183,7 +168,6 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
           </Card>
         )}
 
-        {/* Магазин */}
         {lobby.status === "waiting" && (
           <div className="mb-6">
             <Shop
@@ -191,13 +175,13 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
               coins={coins}
               purchasedItems={purchasedItems}
               onPurchase={handlePurchase}
-              playerId={playerId} // передаем playerId в магазин
+              playerId={playerId}
+              onCoinsUpdate={handleCoinsUpdate}
             />
           </div>
         )}
 
         <div className="grid md:grid-cols-2 gap-6 mb-6">
-          {/* Выбор роли для охотника */}
           <Card
             className={`cursor-pointer transition-all ${
               currentPlayer?.role === "hunter"
@@ -237,7 +221,6 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
             </CardContent>
           </Card>
 
-          {/* Выбор роли для утки */}
           <Card
             className={`cursor-pointer transition-all ${
               currentPlayer?.role === "duck"
@@ -278,7 +261,19 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
           </Card>
         </div>
 
-        {/* Информация об игроках */}
+        {currentPlayer?.role && lobby.status === "waiting" && (
+          <div className="mb-6 text-center">
+            <Button
+              onClick={handleToggleReady}
+              size="lg"
+              variant={currentPlayer.ready ? "secondary" : "default"}
+              className="px-8"
+            >
+              {currentPlayer.ready ? "Отменить готовность" : "Готов к игре!"}
+            </Button>
+          </div>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -311,7 +306,6 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
                   </div>
                 </div>
               ))}
-
               {lobby.players.length < lobby.maxPlayers && (
                 <div className="flex items-center justify-center p-3 rounded-lg border border-dashed">
                   <div className="text-muted-foreground">Ожидание игрока...</div>
@@ -321,15 +315,16 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
           </CardContent>
         </Card>
 
-        {/* Статус игры */}
         <div className="mt-6 text-center">
           {lobby.status === "waiting" && (
             <div className="text-muted-foreground">
               {lobby.players.length < 2
                 ? "Ожидание второго игрока..."
-                : lobby.players.every((p) => p.role && p.ready)
-                  ? "Все готовы! Игра скоро начнется..."
-                  : "Выберите роли для начала игры"}
+                : !lobby.players.every((p) => p.role)
+                  ? "Выберите роли для продолжения"
+                  : !lobby.players.every((p) => p.ready)
+                    ? "Нажмите 'Готов' для начала игры"
+                    : "Все готовы! Игра скоро начнется..."}
             </div>
           )}
           {lobby.status === "countdown" && (

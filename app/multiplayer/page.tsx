@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import SceneBackground from "@/components/scene-background"
-import AppHeader from "@/components/app-header"
+import { Button } from "@/components/ui/button" // исправляем импорт кнопки
 import LobbyBrowser from "@/components/lobby-browser"
 import LobbyRoom from "@/components/lobby-room"
 import GameSession from "@/components/game-session"
+import { ArrowLeft } from "lucide-react"
 import type { PlayerCharacter } from "@/lib/ai-opponent"
 import type { PlayerRole } from "@/lib/lobby-types"
 
@@ -19,7 +19,6 @@ export default function MultiplayerPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Генерируем случайное имя игрока
     const names = ["Игрок", "Охотник", "Утка", "Снайпер", "Следопыт", "Разведчик"]
     const randomName = names[Math.floor(Math.random() * names.length)] + Math.floor(Math.random() * 1000)
     setPlayerName(randomName)
@@ -46,8 +45,7 @@ export default function MultiplayerPage() {
 
   if (gameStarted && playerRole) {
     return (
-      <SceneBackground>
-        <AppHeader />
+      <div className="min-h-screen bg-gradient-to-b from-sky-400 to-green-400 p-4">
         <GameSession
           playerCharacter={playerRole as PlayerCharacter}
           onBackToMenu={handleBackToMainMenu}
@@ -55,34 +53,50 @@ export default function MultiplayerPage() {
           lobbyId={currentLobby}
           playerId={playerId}
         />
-      </SceneBackground>
+      </div>
     )
   }
 
   if (currentLobby) {
     return (
-      <SceneBackground>
-        <AppHeader />
-        <LobbyRoom
-          lobbyId={currentLobby}
-          playerId={playerId}
-          onLeaveLobby={handleLeaveLobby}
-          onStartGame={handleStartGame}
-          onBackToMenu={handleBackToMainMenu}
-        />
-      </SceneBackground>
+      <div className="min-h-screen bg-gradient-to-b from-sky-400 to-green-400 p-4">
+        <div className="max-w-4xl mx-auto">
+          {/* добавляем кнопку назад из лобби */}
+          <div className="mb-4">
+            <Button onClick={handleBackToMainMenu} variant="outline" className="bg-white/20 hover:bg-white/30">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Назад
+            </Button>
+          </div>
+          <LobbyRoom
+            lobbyId={currentLobby}
+            playerId={playerId}
+            onLeaveLobby={handleLeaveLobby}
+            onStartGame={handleStartGame}
+            onBackToMenu={handleBackToMainMenu}
+          />
+        </div>
+      </div>
     )
   }
 
   return (
-    <SceneBackground>
-      <AppHeader />
-      <LobbyBrowser
-        playerId={playerId}
-        playerName={playerName}
-        onJoinLobby={handleJoinLobby}
-        onBackToMenu={handleBackToMainMenu}
-      />
-    </SceneBackground>
+    <div className="min-h-screen bg-gradient-to-b from-sky-400 to-green-400 p-4">
+      <div className="max-w-md mx-auto">
+        {/* добавляем кнопку назад из браузера лобби */}
+        <div className="mb-4">
+          <Button onClick={handleBackToMainMenu} variant="outline" className="bg-white/20 hover:bg-white/30">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Назад
+          </Button>
+        </div>
+        <LobbyBrowser
+          playerId={playerId}
+          playerName={playerName}
+          onJoinLobby={handleJoinLobby}
+          onBackToMenu={handleBackToMainMenu}
+        />
+      </div>
+    </div>
   )
 }

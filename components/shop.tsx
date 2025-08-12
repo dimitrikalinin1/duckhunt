@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { addItemToInventory } from "@/lib/player-service"
+import { addItemToInventory, updatePlayerCoins } from "@/lib/player-service"
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -45,11 +45,13 @@ type Props = {
   coins: number
   purchasedItems: string[]
   onPurchase: (itemId: string, price: number) => void
-  playerId?: string // добавляем playerId для сохранения в базу данных
+  playerId?: string
+  onCoinsUpdate?: (newCoins: number) => void // добавляем callback для обновления баланса
 }
 
-export default function Shop({ playerRole, coins, purchasedItems, onPurchase, playerId }: Props) {
+export default function Shop({ playerRole, coins, purchasedItems, onPurchase, playerId, onCoinsUpdate }: Props) {
   const [selectedCategory, setSelectedCategory] = useState<"all" | "hunter" | "duck">("all")
+  const [purchasing, setPurchasing] = useState<string | null>(null)
 
   const filteredItems = SHOP_ITEMS.filter((item) => {
     if (selectedCategory === "all") return true
@@ -57,19 +59,27 @@ export default function Shop({ playerRole, coins, purchasedItems, onPurchase, pl
   })
 
   const availableItems = filteredItems.filter((item) => {
-    // Показываем только предметы для выбранной роли или универсальные
     if (!playerRole) return item.category === "universal"
     return item.category === playerRole || item.category === "universal"
   })
 
   const handlePurchase = async (item: ShopItem) => {
     if (coins >= item.price && !purchasedItems.includes(item.id) && playerId) {
+      setPurchasing(item.id)
       try {
         await addItemToInventory(playerId, item.id, 1)
+        const newCoins = coins - item.price
+        await updatePlayerCoins(playerId, newCoins)
+
         onPurchase(item.id, item.price)
+        if (onCoinsUpdate) {
+          onCoinsUpdate(newCoins) // обновляем баланс в родительском компоненте
+        }
       } catch (error) {
         console.error("Ошибка при покупке предмета:", error)
         alert("Не удалось купить предмет. Попробуйте еще раз.")
+      } finally {
+        setPurchasing(null)
       }
     }
   }
@@ -93,39 +103,12 @@ export default function Shop({ playerRole, coins, purchasedItems, onPurchase, pl
           <div className="text-center text-muted-foreground py-8">Выберите роль, чтобы увидеть доступные улучшения</div>
         ) : (
           <>
-            {/* Фильтры категорий */}
-            <div className="flex gap-2 mb-4">
-              <Button
-                variant={selectedCategory === "all" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedCategory("all")}
-              >
-                Все
-              </Button>
-              <Button
-                variant={selectedCategory === "hunter" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedCategory("hunter")}
-                disabled={playerRole !== "hunter"}
-              >
-                Охотник
-              </Button>
-              <Button
-                variant={selectedCategory === "duck" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedCategory("duck")}
-                disabled={playerRole !== "duck"}
-              >
-                Утка
-              </Button>
-            </div>
-
-            {/* Список предметов */}
             <div className="grid gap-3">
               {availableItems.map((item) => {
                 const isPurchased = purchasedItems.includes(item.id)
                 const canAfford = coins >= item.price
                 const canPurchase = canAfford && !isPurchased
+                const isPurchasing = purchasing === item.id
 
                 return (
                   <div
@@ -165,10 +148,10 @@ export default function Shop({ playerRole, coins, purchasedItems, onPurchase, pl
                         <Button
                           size="sm"
                           onClick={() => handlePurchase(item)}
-                          disabled={!canPurchase}
+                          disabled={!canPurchase || isPurchasing}
                           variant={canPurchase ? "default" : "outline"}
                         >
-                          {canAfford ? "Купить" : "Недостаточно монет"}
+                          {isPurchasing ? "Покупка..." : canAfford ? "Купить" : "Недостаточно монет"}
                         </Button>
                       )}
                     </div>
