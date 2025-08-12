@@ -666,21 +666,45 @@ export default function GameSession({
   }
 
   // Derived
-  const overlays: Record<number, CellOverlay> = useMemo(() => {
-    const map: Record<number, CellOverlay> = {}
-    activeCells.forEach((i) => (map[i] = {}))
-    shotCells.forEach((i) => (map[i] = { ...(map[i] || {}), shot: true }))
-    revealedEmptyByBinoculars.forEach((i) => (map[i] = { ...(map[i] || {}), revealedEmpty: true }))
-    binocularsUsedCells.forEach((i) => (map[i] = { ...(map[i] || {}), binocularsUsed: true }))
-    compassHint.forEach((i) => (map[i] = { ...(map[i] || {}), compassHint: true }))
-    if (turn === "ended" && beaverCell !== null) map[beaverCell] = { ...(map[beaverCell] || {}), beaver: true }
-    if (turn === "ended" && wardenCell !== null) map[wardenCell] = { ...(map[wardenCell] || {}), warden: true }
-    if (inv.hunter.trapPlaced != null)
-      map[inv.hunter.trapPlaced] = { ...(map[inv.hunter.trapPlaced] || {}), trap: true }
-    if (eagleEyeHighlight != null) map[eagleEyeHighlight] = { ...(map[eagleEyeHighlight] || {}), eagleEyeDuck: true }
-    if (turn === "ended" && duckCell != null) map[duckCell] = { ...(map[duckCell] || {}), duck: true }
-    return map
-  }, [
+  const overlays: Record<number, CellOverlay> = useMemo(
+    () => {
+      const map: Record<number, CellOverlay> = {}
+      activeCells.forEach((i) => (map[i] = {}))
+      shotCells.forEach((i) => (map[i] || {}), shot: true })
+      )
+    revealedEmptyByBinoculars.forEach((i) => (map[i] =
+      ...(map[i] ||
+      ), revealedEmpty: true
+      ))
+    binocularsUsedCells.forEach((i) => (map[i] =
+      ...(map[i] ||
+      ), binocularsUsed: true
+      ))
+    compassHint.forEach((i) => (map[i] =
+      ...(map[i] ||
+      ), compassHint: true
+      ))
+      if (turn === "ended" && beaverCell !== null) map[beaverCell] = { ...(map[beaverCell] || {}), beaver: true }
+      if (turn === "ended" && wardenCell !== null) map[wardenCell] = { ...(map[wardenCell] || {}), warden: true }
+      if (inv.hunter.trapPlaced != null)
+      \
+      map[inv.hunter.trapPlaced] =
+      ...(map[inv.hunter.trapPlaced] ||
+      ), trap: true
+      \
+      if (eagleEyeHighlight != null) map[eagleEyeHighlight] = { ...(map[eagleEyeHighlight] || {}), eagleEyeDuck: true }
+      \
+      // Утка видит свою позицию во время игры, охотник только в конце
+      if (duckCell != null) {
+        \
+        if (turn === \"ended" || playerCharacter === "duck"
+        )
+        map[duckCell] = { ...(map[duckCell] || {}), duck: true }
+      }
+
+      return map
+    },
+    [
     activeCells,
     beaverCell,
     compassHint,
@@ -690,9 +714,11 @@ export default function GameSession({
     shotCells,
     turn,
     revealedEmptyByBinoculars,
-    binocularsUsedCells,
+    binocularsUsedCells,\
     wardenCell,
-  ])
+    playerCharacter,
+  ],
+  )
 
   // AI Actions (только для одиночной игры)
   async function handleAIDuckInitialMove() {
@@ -701,7 +727,8 @@ export default function GameSession({
     console.log("=== AI Duck Initial Move Debug ===")
     console.log("Turn:", turn)
     console.log("Player character:", playerCharacter)
-    console.log("Active cells:", activeCells)
+    \
+    console.log("Active cells:\", activeCells)
     console.log("Shot cells:", Array.from(shotCells))
     console.log("Beaver cell:", beaverCell)
     console.log("Warden cell:", wardenCell)
@@ -711,586 +738,580 @@ export default function GameSession({
       return
     }
 
-    if (playerCharacter !== "hunter") {
+    if (playerCharacter !== "hunter\") {
       console.log("Wrong player character, expected hunter, got:", playerCharacter)
-      return
-    }
+    return
+  }
 
-    setAiThinking(true)
-    console.log("AI Duck making initial move...")
+  setAiThinking(true)
+  console.log("AI Duck making initial move...")
 
-    // Для начального выбора позиции просто выбираем случайную безопасную клетку
-    const safeCells = activeCells.filter((cell) => {
-      const notShot = !shotCells.has(cell)
-      const notBeaver = cell !== beaverCell
-      const notWarden = cell !== wardenCell
-      const isSafe = notShot && notBeaver && notWarden
-      console.log(`Cell ${cell}: notShot=${notShot}, notBeaver=${notBeaver}, notWarden=${notWarden}, isSafe=${isSafe}`)
-      return isSafe
-    })
+  // Для начального выбора позиции просто выбираем случайную безопасную клетку
+  const safeCells = activeCells.filter((cell) => {
+    \
+    const notShot = !shotCells.has(cell)
+    const notBeaver = cell !== beaverCell
+    const notWarden = cell !== wardenCell
+    const isSafe = notShot && notBeaver && notWarden
+    console.log(`Cell ${cell}: notShot=${notShot}, notBeaver=${notBeaver}, notWarden=${notWarden}, isSafe=${isSafe}`)
+    return isSafe
+  })
+  \
+    console.log(\"Safe cells for duck:", safeCells)
 
-    console.log("Safe cells for duck:", safeCells)
+  if (safeCells.length === 0) {
+    console.log("No safe cells, choosing any active cell")
+    const randomCell = sample(activeCells)
+    console.log("Chosen cell:", randomCell)
 
-    if (safeCells.length === 0) {
-      console.log("No safe cells, choosing any active cell")
-      const randomCell = sample(activeCells)
-      console.log("Chosen cell:", randomCell)
-
-      setTimeout(() => {
-        console.log("Executing duck initial choose with cell:", randomCell)
-        handleDuckInitialChoose(randomCell)
-        setAiThinking(false)
-      }, 1200)
-      return
-    }
-
-    // Выбираем случайную безопасную клетку
-    const randomCell = sample(safeCells)
-    console.log("Chosen safe cell:", randomCell)
-
-    // Добавляем задержку для реалистичности
     setTimeout(() => {
-      console.log("Executing duck initial choose with safe cell:", randomCell)
+      console.log("Executing duck initial choose with cell:", randomCell)
       handleDuckInitialChoose(randomCell)
       setAiThinking(false)
     }, 1200)
+    return
   }
 
-  async function handleAIHunterAction() {
-    if (isMultiplayer) return
-    if (turn !== "hunter" || playerCharacter !== "duck") return
+  // Выбираем случайную безопасную клетку
+  const randomCell = sample(safeCells)
+  console.log("Chosen safe cell:", randomCell)
 
-    setAiThinking(true)
-
-    // ВАЖНО: ИИ-охотник НЕ должен знать точную позицию утки!
-    // Передаем null вместо duckCell
-    const aiMove = await ai.makeMove({
-      activeCells,
-      shotCells: Array.from(shotCells),
-      playerCell: null, // ИИ не знает где утка!
-      beaverCell,
-      wardenCell,
-      level: level.key,
-      ammo,
-      compassHint,
-      playerArtifacts: {
-        hunter: {
-          binoculars: inv.hunter.binoculars,
-          trap: inv.hunter.trap,
-          apBullet: inv.hunter.apBullet,
-          eagleEye: inv.hunter.eagleEye,
-        },
-      },
-    })
-
-    if (aiMove.type === "shoot" && aiMove.target !== undefined) {
-      handleHunterShoot(aiMove.target, true)
-    } else if (aiMove.type === "use-ability" && aiMove.ability === "binoculars") {
-      handleBinoculars()
-    }
-
+  // Добавляем задержку для реалистичности
+  setTimeout(() => {
+    console.log("Executing duck initial choose with safe cell:", randomCell)
+    handleDuckInitialChoose(randomCell)
     setAiThinking(false)
-  }
+  }, 1200)
+}
 
-  async function handleAIDuckAction() {
-    if (isMultiplayer) return
-    if (turn !== "duck" || playerCharacter !== "hunter") return
+async function handleAIHunterAction() {
+  if (isMultiplayer) return
+  if (turn !== "hunter" || playerCharacter !== "duck") return
 
-    setAiThinking(true)
-    const aiMove = await ai.makeMove({
-      activeCells,
-      shotCells: Array.from(shotCells),
-      playerCell: duckCell, // ИИ-утка знает свою позицию
-      beaverCell,
-      wardenCell,
-      level: level.key,
-      ammo,
-      duckSnaredTurns,
-      playerArtifacts: {
-        hunter: {
-          binoculars: inv.hunter.binoculars,
-          trap: inv.hunter.trap,
-          apBullet: inv.hunter.apBullet,
-          eagleEye: inv.hunter.eagleEye,
-        },
-      },
-    })
+  setAiThinking(true)
 
-    if (aiMove.type === "move" && aiMove.target !== undefined) {
-      handleDuckFlight(aiMove.target)
-    } else if (aiMove.type === "stay") {
-      handleDuckStay()
-    } else if (aiMove.type === "use-ability") {
-      if (aiMove.ability === "rain") {
-        handleRain()
-      } else if (aiMove.ability === "safeFlight") {
-        handleSafeFlight()
-      }
-    }
-
-    setAiThinking(false)
-  }
-
-  // Actions
-  async function handleDuckInitialChoose(cell: number) {
-    console.log("=== Duck Initial Choose Debug ===")
-    console.log("Turn:", turn)
-    console.log("Cell:", cell)
-    console.log("Active cells includes cell:", activeCells.includes(cell))
-    console.log("Shot cells has cell:", shotCells.has(cell))
-
-    if (turn !== "duck-initial" || !activeCells.includes(cell)) {
-      console.log("Invalid turn or cell")
-      return
-    }
-    if (shotCells.has(cell)) {
-      console.log("Cell already shot")
-      return
-    }
-
-    // В мультиплеере используем серверные действия
-    if (isMultiplayer && lobbyId && playerId) {
-      setIsLoading(true)
-      await makeDuckInitialMove(lobbyId, playerId)
-      await syncAfterAction() // Синхронизируемся после действия
-      setIsLoading(false)
-      return
-    }
-
-    // Проверки на NPC
-    if (level.hasWarden && wardenCell === cell) {
-      console.log("Duck hit warden")
-      setDuckCell(cell)
-      endRound({ winner: "hunter", reason: "duck-hit-warden" })
-      return
-    }
-    if (beaverCell === cell) {
-      console.log("Duck hit beaver")
-      setDuckCell(cell)
-      endRound({ winner: "hunter", reason: "duck-hit-beaver" })
-      return
-    }
-
-    console.log("Setting duck cell to:", cell)
-    setDuckCell(cell)
-
-    if (inv.hunter.trapPlaced === cell) {
-      console.log("Duck hit trap")
-      setDuckSnaredTurns(1)
-      play("trap")
-    }
-
-    // Eagle Eye эффект
-    if (level.key === 4 && inv.hunter.eagleEye && !inv.hunter.eagleEyeUsed) {
-      console.log("Eagle eye effect triggered")
-      setEagleEyeHighlight(cell)
-      setTimeout(() => setEagleEyeHighlight(null), 1500)
-      setInv((p) => ({ ...p, hunter: { ...p.hunter, eagleEyeUsed: true } }))
-    }
-
-    // Переход к следующему ходу
-    console.log("Moving to hunter turn")
-    setTurn("hunter")
-    setBinocularUsedThisTurn(false)
-  }
-
-  // исправлена ошибка с хуками - убраны условные вызовы state setters
-  const handleBinoculars = useCallback(async () => {
-    if (turn !== "hunter" || binocularUsedThisTurn || !inv.hunter.binoculars) return
-
-    // В мультиплеере используем серверные действия
-    if (isMultiplayer && lobbyId && playerId) {
-      setIsLoading(true)
-      await useBinoculars(lobbyId, playerId)
-      await syncAfterAction()
-      setIsLoading(false)
-      return
-    }
-
-    // Для одиночной игры - локальная логика
-    const availableCells = activeCells.filter(
-      (c) => !shotCells.has(c) && !revealedEmptyByBinoculars.has(c) && !binocularsUsedCells.has(c),
-    )
-
-    let targetCell = null
-    if (availableCells.length > 0) {
-      targetCell = sample(availableCells)
-
-      // Отмечаем клетку как использованную биноклем
-      setBinocularsUsedCells((prev) => new Set([...prev, targetCell]))
-
-      // Проверяем что в клетке
-      const empties = activeCells.filter(
-        (c) =>
-          c !== duckCell &&
-          c !== beaverCell &&
-          c !== wardenCell &&
-          !shotCells.has(c) &&
-          !revealedEmptyByBinoculars.has(c),
-      )
-
-      if (empties.includes(targetCell)) {
-        setRevealedEmptyByBinoculars((prev) => new Set([...prev, targetCell]))
-      }
-    }
-
-    setBinocularUsedThisTurn(true)
-    play("ui")
-  }, [
-    turn,
-    binocularUsedThisTurn,
-    inv.hunter.binoculars,
-    isMultiplayer,
-    lobbyId,
-    playerId,
-    syncAfterAction,
+  // ВАЖНО: ИИ-охотник НЕ должен знать точную позицию утки!
+  // Передаем null вместо duckCell
+  const aiMove = await ai.makeMove({
     activeCells,
-    shotCells,
-    revealedEmptyByBinoculars,
-    binocularsUsedCells,
-    duckCell,
+    shotCells: Array.from(shotCells),
+    playerCell: null, // ИИ не знает где утка!
     beaverCell,
     wardenCell,
-    play,
-  ])
-
-  async function handleHunterShoot(cell: number, isAI = false) {
-    const canShoot = turn === "hunter" && activeCells.includes(cell) && !shotCells.has(cell)
-    if (!canShoot) return
-    if (!isAI && playerCharacter !== "hunter") return
-
-    // В мультиплеере используем серверные действия
-    if (isMultiplayer && lobbyId && playerId && !isAI) {
-      setIsLoading(true)
-      await makeHunterShot(lobbyId, playerId, cell, useAPBullet)
-      setUseAPBullet(false)
-      await syncAfterAction() // Синхронизируемся после действия
-      setIsLoading(false)
-      return
-    }
-
-    setLastShotAnim({ cell, id: Date.now() })
-    play("shot")
-
-    if (level.hasWarden && wardenCell === cell) {
-      setShotCells((s) => new Set(s).add(cell))
-      endRound({ winner: "duck", reason: "hunter-hit-warden" })
-      return
-    }
-    if (beaverCell === cell) {
-      setShotCells((s) => new Set(s).add(cell))
-      endRound({ winner: "duck", reason: "hunter-hit-beaver" })
-      return
-    }
-    if (duckCell === cell) {
-      const isAP = useAPBullet && inv.hunter.apBullet > 0
-      if (isAP) {
-        setInv((p) => ({ ...p, hunter: { ...p.hunter, apBullet: p.hunter.apBullet - 1 } }))
-        setUseAPBullet(false)
-      }
-
-      // Mirror plumage protection
-      if (!isAP && inv.duck.mirrorPlumage && !inv.duck.mirrorUsed) {
-        setInv((p) => ({ ...p, duck: { ...p.duck, mirrorUsed: true } }))
-        const free = activeCells.filter((c) => !shotCells.has(c) && c !== cell)
-        if (free.length > 0) {
-          const reflectTarget = sample(free)
-          if (Math.random() < 0.1) {
-            // Hit hunter (self-damage)
-            endRound({ winner: "duck", reason: "hunter-hit-beaver" })
-            return
-          }
-          // Reflect to another cell
-          setShotCells((s) => new Set(s).add(cell).add(reflectTarget))
-          setAmmo((a) => a - 1)
-          if (ammo - 1 <= 0) endRound({ winner: "duck", reason: "hunter-out-of-ammo" })
-          else {
-            setTurn("duck")
-          }
-          return
-        }
-      }
-
-      // Auto flight protection
-      if (!isAP && inv.duck.autoFlight && !inv.duck.autoFlightUsed) {
-        const valid = activeCells.filter((c) => c !== beaverCell && c !== wardenCell && !shotCells.has(c) && c !== cell)
-        if (valid.length >= 1) {
-          setInv((p) => ({ ...p, duck: { ...p.duck, autoFlightUsed: true } }))
-          setDuckCell(sample(valid))
-          setShotCells((s) => new Set(s).add(cell))
-          setAmmo((a) => a - 1)
-          if (ammo - 1 <= 0) endRound({ winner: "duck", reason: "hunter-out-of-ammo" })
-          else {
-            setTurn("duck")
-          }
-          return
-        }
-      }
-
-      setShotCells((s) => new Set(s).add(cell))
-      endRound({ winner: "hunter", reason: "hunter-shot-duck" })
-      return
-    }
-
-    // Miss
-    setShotCells((s) => new Set(s).add(cell))
-    setAmmo((a) => a - 1)
-    play("miss")
-    if (ammo - 1 <= 0) endRound({ winner: "duck", reason: "hunter-out-of-ammo" })
-    else {
-      setTurn("duck")
-    }
-  }
-
-  const [isFlightMode, setIsFlightMode] = useState(false)
-
-  async function handleDuckStay() {
-    if (turn !== "duck") return
-
-    // В мультиплеере используем серверные действия
-    if (isMultiplayer && lobbyId && playerId) {
-      setIsLoading(true)
-      await makeDuckMove(lobbyId, playerId, "stay")
-      await syncAfterAction() // Синхронизируемся после действия
-      setIsLoading(false)
-      return
-    }
-
-    if (duckSnaredTurns > 0) {
-      setDuckSnaredTurns(duckSnaredTurns - 1)
-    }
-    setTurn("hunter")
-    setBinocularUsedThisTurn(false)
-  }
-
-  function startFlightMode() {
-    if (turn !== "duck" || playerCharacter !== "duck") return
-    if (!inv.duck.flight && !inv.duck.safeFlight && !inv.duck.ghostFlight) return
-    if (duckSnaredTurns > 0) return
-    setIsFlightMode(true)
-  }
-
-  async function handleDuckFlight(cell: number) {
-    if (turn !== "duck" || !activeCells.includes(cell)) return
-
-    // В мультиплеере используем серверные действия
-    if (isMultiplayer && lobbyId && playerId) {
-      setIsLoading(true)
-      await makeDuckMove(lobbyId, playerId, "flight", cell)
-      setIsFlightMode(false)
-      await syncAfterAction() // Синхронизируемся после действия
-      setIsLoading(false)
-      return
-    }
-
-    const canUseShotCell = inv.duck.ghostFlight
-    if (shotCells.has(cell) && !canUseShotCell) return
-
-    // утка не может лететь туда где использовался бинокль
-    if (binocularsUsedCells.has(cell)) return
-
-    if (level.hasWarden && wardenCell === cell) {
-      setDuckCell(cell)
-      endRound({ winner: "hunter", reason: "duck-hit-warden" })
-      return
-    }
-    if (beaverCell === cell) {
-      setDuckCell(cell)
-      endRound({ winner: "hunter", reason: "duck-hit-beaver" })
-      return
-    }
-
-    setDuckCell(cell)
-    setIsFlightMode(false)
-
-    if (inv.hunter.trapPlaced === cell) {
-      setDuckSnaredTurns(1)
-      play("trap")
-    }
-
-    setTurn("hunter")
-    setBinocularUsedThisTurn(false)
-  }
-
-  async function handleRain() {
-    if (turn !== "duck" || level.key !== 4 || !inv.duck.rain || inv.duck.rainUsed) return
-
-    // В мультиплеере используем серверные действия
-    if (isMultiplayer && lobbyId && playerId) {
-      setIsLoading(true)
-      await useDuckAbility(lobbyId, playerId, "rain")
-      await syncAfterAction() // Синхронизируемся после действия
-      setIsLoading(false)
-      return
-    }
-
-    setInv((p) => ({ ...p, duck: { ...p.duck, rainActive: true, rainUsed: true } }))
-    setTurn("hunter")
-    setBinocularUsedThisTurn(false)
-    play("rain")
-  }
-
-  async function handleSafeFlight() {
-    if (turn !== "duck" || !inv.duck.safeFlight) return
-
-    // В мультиплеере используем серверные действия
-    if (isMultiplayer && lobbyId && playerId) {
-      setIsLoading(true)
-      await useDuckAbility(lobbyId, playerId, "safeFlight")
-      setIsFlightMode(false)
-      await syncAfterAction() // Синхронизируемся после действия
-      setIsLoading(false)
-      return
-    }
-
-    const safe = activeCells.filter((c) => c !== beaverCell && c !== wardenCell && !shotCells.has(c) && c !== duckCell)
-    if (safe.length === 0) return
-
-    const dst = sample(safe)
-    setDuckCell(dst)
-
-    if (inv.hunter.trapPlaced === dst) {
-      setDuckSnaredTurns(1)
-      play("trap")
-    }
-
-    setTurn("hunter")
-    setBinocularUsedThisTurn(false)
-    setIsFlightMode(false)
-  }
-
-  function onCellClick(i: number) {
-    if (aiThinking || isLoading) return // Блокируем клики во время хода ИИ или загрузки
-
-    if (turn === "duck-initial" && playerCharacter === "duck") return handleDuckInitialChoose(i)
-    if (turn === "hunter" && playerCharacter === "hunter") return handleHunterShoot(i)
-    if (turn === "duck" && playerCharacter === "duck" && isFlightMode) return handleDuckFlight(i)
-  }
-
-  const canClickCell = useCallback(
-    (i: number) => {
-      if (!activeCells.includes(i) || isLoading) return false
-
-      // В мультиплеере блокируем клики только если не наш ход
-      if (isMultiplayer) {
-        if (turn === "duck-initial" && playerCharacter !== "duck") return false
-        if (turn === "hunter" && playerCharacter !== "hunter") return false
-        if (turn === "duck" && playerCharacter !== "duck") return false
-      } else {
-        // В одиночной игре блокируем во время хода ИИ
-        if (aiThinking) return false
-      }
-
-      if (turn === "duck-initial") {
-        return !shotCells.has(i)
-      }
-
-      if (turn === "hunter") {
-        return !shotCells.has(i)
-      }
-
-      if (turn === "duck" && isFlightMode) {
-        // утка не может лететь туда где использовался бинокль
-        if (binocularsUsedCells.has(i)) return false
-        return inv.duck.ghostFlight ? true : !shotCells.has(i)
-      }
-
-      return false
+    level: level.key,
+    ammo,
+    compassHint,
+    playerArtifacts: {
+      hunter: {
+        binoculars: inv.hunter.binoculars,
+        trap: inv.hunter.trap,
+        apBullet: inv.hunter.apBullet,
+        eagleEye: inv.hunter.eagleEye,
+      },
     },
-    [
-      activeCells,
-      isFlightMode,
-      shotCells,
-      binocularsUsedCells,
-      turn,
-      playerCharacter,
-      inv.duck.ghostFlight,
-      aiThinking,
-      isMultiplayer,
-      isLoading,
-    ],
+  })
+
+  if (aiMove.type === "shoot" && aiMove.target !== undefined) {
+    handleHunterShoot(aiMove.target, true)
+  } else if (aiMove.type === "use-ability" && aiMove.ability === "binoculars") {
+    handleBinoculars()
+  }
+
+  setAiThinking(false)
+}
+
+async function handleAIDuckAction() {
+  if (isMultiplayer) return
+  if (turn !== "duck" || playerCharacter !== "hunter") return
+
+  setAiThinking(true)
+  const aiMove = await ai.makeMove({
+    activeCells,
+    shotCells: Array.from(shotCells),
+    playerCell: duckCell, // ИИ-утка знает свою позицию
+    beaverCell,
+    wardenCell,
+    level: level.key,
+    ammo,
+    duckSnaredTurns,
+    playerArtifacts: {
+      hunter: {
+        binoculars: inv.hunter.binoculars,
+        trap: inv.hunter.trap,
+        apBullet: inv.hunter.apBullet,
+        eagleEye: inv.hunter.eagleEye,
+      },
+    },
+  })
+
+  if (aiMove.type === "move" && aiMove.target !== undefined) {
+    handleDuckFlight(aiMove.target)
+  } else if (aiMove.type === "stay") {
+    handleDuckStay()
+  } else if (aiMove.type === "use-ability") {
+    if (aiMove.ability === "rain") {
+      handleRain()
+    } else if (aiMove.ability === "safeFlight") {
+      handleSafeFlight()
+    }
+  }
+
+  setAiThinking(false)
+}
+
+// Actions
+async function handleDuckInitialChoose(cell: number) {
+  console.log("=== Duck Initial Choose Debug ===")
+  console.log("Turn:", turn)
+  console.log("Cell:", cell)
+  console.log("Active cells includes cell:", activeCells.includes(cell))
+  console.log("Shot cells has cell:", shotCells.has(cell))
+
+  if (turn !== "duck-initial" || !activeCells.includes(cell)) {
+    console.log("Invalid turn or cell")
+    return
+  }
+  if (shotCells.has(cell)) {
+    console.log("Cell already shot")
+    return
+  }
+
+  // В мультиплеере используем серверные действия
+  if (isMultiplayer && lobbyId && playerId) {
+    setIsLoading(true)
+    await makeDuckInitialMove(lobbyId, playerId)
+    await syncAfterAction() // Синхронизируемся после действия
+    setIsLoading(false)
+    return
+  }
+
+  // Проверки на NPC
+  if (level.hasWarden && wardenCell === cell) {
+    console.log("Duck hit warden")
+    setDuckCell(cell)
+    endRound({ winner: "hunter", reason: "duck-hit-warden" })
+    return
+  }
+  if (beaverCell === cell) {
+    console.log("Duck hit beaver")
+    setDuckCell(cell)
+    endRound({ winner: "hunter", reason: "duck-hit-beaver" })
+    return
+  }
+
+  console.log("Setting duck cell to:", cell)
+  setDuckCell(cell)
+
+  if (inv.hunter.trapPlaced === cell) {
+    console.log("Duck hit trap")
+    setDuckSnaredTurns(1)
+    play("trap")
+  }
+
+  // Eagle Eye эффект
+  if (level.key === 4 && inv.hunter.eagleEye && !inv.hunter.eagleEyeUsed) {
+    console.log("Eagle eye effect triggered")
+    setEagleEyeHighlight(cell)
+    setTimeout(() => setEagleEyeHighlight(null), 1500)
+    setInv((p) => ({ ...p, hunter: { ...p.hunter, eagleEyeUsed: true } }))
+  }
+
+  // Переход к следующему ходу
+  console.log("Moving to hunter turn")
+  setTurn("hunter")
+  setBinocularUsedThisTurn(false)
+}
+
+// исправлена ошибка с хуками - убраны условные вызовы state setters
+const handleBinoculars = useCallback(async () => {
+  // Проверяем условия в начале
+  const canUseBinoculars = turn === "hunter" && !binocularUsedThisTurn && inv.hunter.binoculars
+
+  if (!canUseBinoculars) return
+
+  // В мультиплеере используем серверные действия
+  if (isMultiplayer && lobbyId && playerId) {
+    setIsLoading(true)
+    await useBinoculars(lobbyId, playerId)
+    await syncAfterAction()
+    setIsLoading(false)
+    return
+  }
+
+  // Для одиночной игры - локальная логика
+  const availableCells = activeCells.filter(
+    (c) => !shotCells.has(c) && !revealedEmptyByBinoculars.has(c) && !binocularsUsedCells.has(c),
   )
 
-  function newRound() {
-    resetRoundState()
+  if (availableCells.length > 0) {
+    const targetCell = sample(availableCells)
+
+    // Отмечаем клетку как использованную биноклем
+    setBinocularsUsedCells((prev) => new Set([...prev, targetCell]))
+
+    // Проверяем что в клетке
+    const empties = activeCells.filter(
+      (c) =>
+        c !== duckCell &&
+        c !== beaverCell &&
+        c !== wardenCell &&
+        !shotCells.has(c) &&
+        !revealedEmptyByBinoculars.has(c),
+    )
+
+    if (empties.includes(targetCell)) {
+      setRevealedEmptyByBinoculars((prev) => new Set([...prev, targetCell]))
+    }
   }
 
-  // Status text
-  const statusText = useMemo(() => {
-    const characterName = playerCharacter === "hunter" ? "Охотник" : "Утка"
-    const prefix = `${characterName} • Уровень ${level.key}: ${level.name} • `
+  // Всегда вызываем эти state setters безусловно
+  setBinocularUsedThisTurn(true)
+  play("ui")
+}, [
+  turn,
+  binocularUsedThisTurn,
+  inv.hunter.binoculars,
+  isMultiplayer,
+  lobbyId,
+  playerId,
+  syncAfterAction,
+  activeCells,
+  shotCells,
+  revealedEmptyByBinoculars,
+  binocularsUsedCells,
+  duckCell,
+  beaverCell,
+  wardenCell,
+  play,
+])
 
-    if (isLoading) {
-      return prefix + "Обработка хода..."
+async function handleHunterShoot(cell: number, isAI = false) {
+  const canShoot = turn === "hunter" && activeCells.includes(cell) && !shotCells.has(cell)
+  if (!canShoot) return
+  if (!isAI && playerCharacter !== "hunter") return
+
+  // В мультиплеере используем серверные действия
+  if (isMultiplayer && lobbyId && playerId && !isAI) {
+    setIsLoading(true)
+    await makeHunterShot(lobbyId, playerId, cell, useAPBullet)
+    setUseAPBullet(false)
+    await syncAfterAction() // Синхронизируемся после действия
+    setIsLoading(false)
+    return
+  }
+
+  setLastShotAnim({ cell, id: Date.now() })
+  play("shot")
+
+  if (level.hasWarden && wardenCell === cell) {
+    setShotCells((s) => new Set(s).add(cell))
+    endRound({ winner: "duck", reason: "hunter-hit-warden" })
+    return
+  }
+  if (beaverCell === cell) {
+    setShotCells((s) => new Set(s).add(cell))
+    endRound({ winner: "duck", reason: "hunter-hit-beaver" })
+    return
+  }
+  if (duckCell === cell) {
+    const isAP = useAPBullet && inv.hunter.apBullet > 0
+    if (isAP) {
+      setInv((p) => ({ ...p, hunter: { ...p.hunter, apBullet: p.hunter.apBullet - 1 } }))
+      setUseAPBullet(false)
     }
 
-    if (!isMultiplayer && aiThinking) {
-      const aiCharacter = playerCharacter === "hunter" ? "ИИ-утка" : "ИИ-охотник"
-      return prefix + `${aiCharacter} думает...`
-    }
-
-    switch (turn) {
-      case "pre-bets":
-        return prefix + (isMultiplayer ? "Подготовка к игре..." : "Ставки и старт")
-      case "duck-initial":
-        if (isMultiplayer) {
-          return (
-            prefix +
-            (playerCharacter === "duck" ? "Ваш ход: выберите начальную позицию" : "Ход утки: ожидание выбора позиции")
-          )
-        } else {
-          return prefix + (playerCharacter === "duck" ? "Выберите начальную позицию" : "ИИ-утка выбирает позицию...")
+    // Mirror plumage protection
+    if (!isAP && inv.duck.mirrorPlumage && !inv.duck.mirrorUsed) {
+      setInv((p) => ({ ...p, duck: { ...p.duck, mirrorUsed: true } }))
+      const free = activeCells.filter((c) => !shotCells.has(c) && c !== cell)
+      if (free.length > 0) {
+        const reflectTarget = sample(free)
+        if (Math.random() < 0.1) {
+          // Hit hunter (self-damage)
+          endRound({ winner: "duck", reason: "hunter-hit-beaver" })
+          return
         }
-      case "hunter":
-        if (isMultiplayer) {
-          return (
-            prefix + (playerCharacter === "hunter" ? "Ваш ход: выстрел или бинокль" : "Ход охотника: ожидание действия")
-          )
-        } else {
-          return prefix + (playerCharacter === "hunter" ? "Ваш ход: выстрел или бинокль" : "Ход ИИ-охотника...")
+        // Reflect to another cell
+        setShotCells((s) => new Set(s).add(cell).add(reflectTarget))
+        setAmmo((a) => a - 1)
+        if (ammo - 1 <= 0) endRound({ winner: "duck", reason: "hunter-out-of-ammo" })
+        else {
+          setTurn("duck")
         }
-      case "duck":
-        if (isMultiplayer) {
-          if (playerCharacter === "duck") {
-            return prefix + (duckSnaredTurns > 0 ? "Утка в капкане: пропуск хода" : "Ваш ход: затаиться или перелёт")
-          } else {
-            return prefix + "Ход утки: ожидание действия"
-          }
-        } else {
-          if (playerCharacter === "duck") {
-            return prefix + (duckSnaredTurns > 0 ? "Утка в капкане: пропуск хода" : "Ваш ход: затаиться или перелёт")
-          } else {
-            return prefix + "Ход ИИ-утки..."
-          }
+        return
+      }
+    }
+
+    // Auto flight protection
+    if (!isAP && inv.duck.autoFlight && !inv.duck.autoFlightUsed) {
+      const valid = activeCells.filter((c) => c !== beaverCell && c !== wardenCell && !shotCells.has(c) && c !== cell)
+      if (valid.length >= 1) {
+        setInv((p) => ({ ...p, duck: { ...p.duck, autoFlightUsed: true } }))
+        setDuckCell(sample(valid))
+        setShotCells((s) => new Set(s).add(cell))
+        setAmmo((a) => a - 1)
+        if (ammo - 1 <= 0) endRound({ winner: "duck", reason: "hunter-out-of-ammo" })
+        else {
+          setTurn("duck")
         }
-      case "ended":
-        if (!outcome) return prefix + "Раунд завершен"
-        return prefix + (outcome.winner === "hunter" ? "Победа Охотника" : "Победа Утки")
-      default:
-        return prefix
+        return
+      }
     }
-  }, [duckSnaredTurns, level.key, level.name, outcome, turn, playerCharacter, aiThinking, isMultiplayer, isLoading])
 
-  const rows = level.rows
-  const cols = level.cols
+    setShotCells((s) => new Set(s).add(cell))
+    endRound({ winner: "hunter", reason: "hunter-shot-duck" })
+    return
+  }
 
-  const canStartRound = useMemo(() => {
-    const levelReq = { 1: 1, 2: 5, 3: 10, 4: 15 }[levelKey]
-    const levelOk = hunter.level >= levelReq && duck.level >= levelReq
-    return levelOk && hunterBet === duckBet && hunterBet > 0 && hunterBet <= Math.min(hunter.gold, duck.gold)
-  }, [hunterBet, duckBet, hunter.gold, duck.gold, hunter.level, duck.level, levelKey])
+  // Miss
+  setShotCells((s) => new Set(s).add(cell))
+  setAmmo((a) => a - 1)
+  play("miss")
+  if (ammo - 1 <= 0) endRound({ winner: "duck", reason: "hunter-out-of-ammo" })
+  else {
+    setTurn("duck")
+  }
+}
 
-  const playerRole = useMemo(() => {
-    return playerCharacter
-  }, [playerCharacter])
+const [isFlightMode, setIsFlightMode] = useState(false)
 
-  const gameState = useMemo(() => {
-    return {
-      duckCell: duckCell,
+async function handleDuckStay() {
+  if (turn !== "duck") return
+
+  // В мультиплеере используем серверные действия
+  if (isMultiplayer && lobbyId && playerId) {
+    setIsLoading(true)
+    await makeDuckMove(lobbyId, playerId, "stay")
+    await syncAfterAction() // Синхронизируемся после действия
+    setIsLoading(false)
+    return
+  }
+
+  if (duckSnaredTurns > 0) {
+    setDuckSnaredTurns(duckSnaredTurns - 1)
+  }
+  setTurn("hunter")
+  setBinocularUsedThisTurn(false)
+}
+
+function startFlightMode() {
+  if (turn !== "duck" || playerCharacter !== "duck") return
+  if (!inv.duck.flight && !inv.duck.safeFlight && !inv.duck.ghostFlight) return
+  if (duckSnaredTurns > 0) return
+  setIsFlightMode(true)
+}
+
+async function handleDuckFlight(cell: number) {
+  if (turn !== "duck" || !activeCells.includes(cell)) return
+
+  // В мультиплеере используем серверные действия
+  if (isMultiplayer && lobbyId && playerId) {
+    setIsLoading(true)
+    await makeDuckMove(lobbyId, playerId, "flight", cell)
+    setIsFlightMode(false)
+    await syncAfterAction() // Синхронизируемся после действия
+    setIsLoading(false)
+    return
+  }
+
+  const canUseShotCell = inv.duck.ghostFlight
+  if (shotCells.has(cell) && !canUseShotCell) return
+
+  // утка не может лететь туда где использовался бинокль
+  if (binocularsUsedCells.has(cell)) return
+
+  if (level.hasWarden && wardenCell === cell) {
+    setDuckCell(cell)
+    endRound({ winner: "hunter", reason: "duck-hit-warden" })
+    return
+  }
+  if (beaverCell === cell) {
+    setDuckCell(cell)
+    endRound({ winner: "hunter", reason: "duck-hit-beaver" })
+    return
+  }
+
+  setDuckCell(cell)
+  setIsFlightMode(false)
+
+  if (inv.hunter.trapPlaced === cell) {
+    setDuckSnaredTurns(1)
+    play("trap")
+  }
+
+  setTurn("hunter")
+  setBinocularUsedThisTurn(false)
+}
+
+async function handleRain() {
+  if (turn !== "duck" || level.key !== 4 || !inv.duck.rain || inv.duck.rainUsed) return
+
+  // В мультиплеере используем серверные действия
+  if (isMultiplayer && lobbyId && playerId) {
+    setIsLoading(true)
+    await useDuckAbility(lobbyId, playerId, "rain")
+    await syncAfterAction() // Синхронизируемся после действия
+    setIsLoading(false)
+    return
+  }
+
+  setInv((p) => ({ ...p, duck: { ...p.duck, rainActive: true, rainUsed: true } }))
+  setTurn("hunter")
+  setBinocularUsedThisTurn(false)
+  play("rain")
+}
+
+async function handleSafeFlight() {
+  if (turn !== "duck" || !inv.duck.safeFlight) return
+
+  // В мультиплеере используем серверные действия
+  if (isMultiplayer && lobbyId && playerId) {
+    setIsLoading(true)
+    await useDuckAbility(lobbyId, playerId, "safeFlight")
+    setIsFlightMode(false)
+    await syncAfterAction() // Синхронизируемся после действия
+    setIsLoading(false)
+    return
+  }
+
+  const safe = activeCells.filter((c) => c !== beaverCell && c !== wardenCell && !shotCells.has(c) && c !== duckCell)
+  if (safe.length === 0) return
+
+  const dst = sample(safe)
+  setDuckCell(dst)
+
+  if (inv.hunter.trapPlaced === dst) {
+    setDuckSnaredTurns(1)
+    play("trap")
+  }
+
+  setTurn("hunter")
+  setBinocularUsedThisTurn(false)
+  setIsFlightMode(false)
+}
+
+function onCellClick(i: number) {
+  if (aiThinking || isLoading) return // Блокируем клики во время хода ИИ или загрузки
+
+  if (turn === "duck-initial" && playerCharacter === "duck") return handleDuckInitialChoose(i)
+  if (turn === "hunter" && playerCharacter === "hunter") return handleHunterShoot(i)
+  if (turn === "duck" && playerCharacter === "duck" && isFlightMode) return handleDuckFlight(i)
+}
+
+const canClickCell = useCallback(
+  (i: number) => {
+    if (!activeCells.includes(i) || isLoading) return false
+
+    // В мультиплеере блокируем клики только если не наш ход
+    if (isMultiplayer) {
+      if (turn === "duck-initial" && playerCharacter !== "duck") return false
+      if (turn === "hunter" && playerCharacter !== "hunter") return false
+      if (turn === "duck" && playerCharacter !== "duck") return false
+    } else {
+      // В одиночной игре блокируем во время хода ИИ
+      if (aiThinking) return false
     }
-  }, [duckCell])
 
-  return (
+    if (turn === "duck-initial") {
+      return !shotCells.has(i)
+    }
+
+    if (turn === "hunter") {
+      return !shotCells.has(i)
+    }
+
+    if (turn === "duck" && isFlightMode) {
+      // утка не может лететь туда где использовался бинокль
+      if (binocularsUsedCells.has(i)) return false
+      return inv.duck.ghostFlight ? true : !shotCells.has(i)
+    }
+
+    return false
+  },
+  [
+    activeCells,
+    isFlightMode,
+    shotCells,
+    binocularsUsedCells,
+    turn,
+    playerCharacter,
+    inv.duck.ghostFlight,
+    aiThinking,
+    isMultiplayer,
+    isLoading,
+  ],
+)
+
+function newRound() {
+  resetRoundState()
+}
+
+// Status text
+const statusText = useMemo(() => {
+  const characterName = playerCharacter === "hunter" ? "Охотник" : "Утка"
+  const prefix = `${characterName} • Уровень ${level.key}: ${level.name} • `
+
+  if (isLoading) {
+    return prefix + "Обработка хода..."
+  }
+
+  if (!isMultiplayer && aiThinking) {
+    const aiCharacter = playerCharacter === "hunter" ? "ИИ-утка" : "ИИ-охотник"
+    return prefix + `${aiCharacter} думает...`
+  }
+
+  switch (turn) {
+    case "pre-bets":
+      return prefix + (isMultiplayer ? "Подготовка к игре..." : "Ставки и старт")
+    case "duck-initial":
+      if (isMultiplayer) {
+        return (
+          prefix +
+          (playerCharacter === "duck" ? "Ваш ход: выберите начальную позицию" : "Ход утки: ожидание выбора позиции")
+        )
+      } else {
+        return prefix + (playerCharacter === "duck" ? "Выберите начальную позицию" : "ИИ-утка выбирает позицию...")
+      }
+    case "hunter":
+      if (isMultiplayer) {
+        return (
+          prefix + (playerCharacter === "hunter" ? "Ваш ход: выстрел или бинокль" : "Ход охотника: ожидание действия")
+        )
+      } else {
+        return prefix + (playerCharacter === "hunter" ? "Ваш ход: выстрел или бинокль" : "Ход ИИ-охотника...")
+      }
+    case "duck":
+      if (isMultiplayer) {
+        if (playerCharacter === "duck") {
+          return prefix + (duckSnaredTurns > 0 ? "Утка в капкане: пропуск хода" : "Ваш ход: затаиться или перелёт")
+        } else {
+          return prefix + "Ход утки: ожидание действия"
+        }
+      } else {
+        if (playerCharacter === "duck") {
+          return prefix + (duckSnaredTurns > 0 ? "Утка в капкане: пропуск хода" : "Ваш ход: затаиться или перелёт")
+        } else {
+          return prefix + "Ход ИИ-утки..."
+        }
+      }
+    case "ended":
+      if (!outcome) return prefix + "Раунд завершен"
+      return prefix + (outcome.winner === "hunter" ? "Победа Охотника" : "Победа Утки")
+    default:
+      return prefix
+  }
+}, [duckSnaredTurns, level.key, level.name, outcome, turn, playerCharacter, aiThinking, isMultiplayer, isLoading])
+
+const rows = level.rows
+const cols = level.cols
+
+const canStartRound = useMemo(() => {
+  const levelReq = { 1: 1, 2: 5, 3: 10, 4: 15 }[levelKey]
+  const levelOk = hunter.level >= levelReq && duck.level >= levelReq
+  return levelOk && hunterBet === duckBet && hunterBet > 0 && hunterBet <= Math.min(hunter.gold, duck.gold)
+}, [hunterBet, duckBet, hunter.gold, duck.gold, hunter.level, duck.level, levelKey])
+
+return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
       {notifications.length > 0 && (
         <div className="bg-blue-100 border border-blue-300 rounded-lg p-3 mb-4">
@@ -1301,6 +1322,7 @@ export default function GameSession({
           ))}
         </div>
       )}
+
       <div className="mx-auto max-w-5xl">
         <div className="mb-4 flex items-center justify-between">
           <Button variant="outline" onClick={onBackToMenu}>
@@ -1373,9 +1395,31 @@ export default function GameSession({
                       ? "Недостаточно средств/уровня"
                       : "Начать раунд"}
                 </Button>
+                <ShopDialog
+                  level={level}
+                  inv={inv}
+                  prices={SHOP}
+                  balances={{ hunter: hunter.gold, duck: duck.gold }}
+                  buy={buy}
+                  buyFeatherRank={buyFeatherRank}
+                  playerCharacter={playerCharacter}
+                />
               </div>
             )}
 
+            {isMultiplayer && turn === "pre-bets" && (
+              <div className="mb-3 flex justify-end">
+                <ShopDialog
+                  level={level}
+                  inv={inv}
+                  prices={SHOP}
+                  balances={{ hunter: hunter.gold, duck: duck.gold }}
+                  buy={buy}
+                  buyFeatherRank={buyFeatherRank}
+                  playerCharacter={playerCharacter}
+                />
+              </div>
+            )}
 
             <div className="relative">
               <FeatherBurst show={showFeathers} />
@@ -1387,9 +1431,8 @@ export default function GameSession({
                 lastShotAnim={lastShotAnim}
                 canClick={canClickCell}
                 onCellClick={onCellClick}
-                playerRole={playerRole}
-                duckPosition={gameState?.duckCell}
               />
+            </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
               {turn === "duck-initial" && (
@@ -1658,15 +1701,15 @@ function ShopDialog({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className={cn("rounded-lg border p-3", playerCharacter !== "hunter" && "opacity-60")}>
             <div className="mb-2 flex items-center gap-2">
-              <Image src="/images/emoji/hunter-grin.png" alt="Охотник\" width={22} height={22} />
-              <div className="font-medium">{"Охотник\"}</div>
+              <Image src="/images/emoji/hunter-grin.png" alt="Охотник" width={22} height={22} />\
+              <div className="font-medium">{"Охотник"}</div>
               <div className="ml-auto text-xs text-muted-foreground">{`Баланс: ${balances.hunter} 🪙`}</div>
             </div>
             <ShopRow
               icon="/images/ui/binoculars.png"
               title="Бинокль"
-              desc={`Открывает ${inv.hunter.binocularsPlus ? "2" : "1"} пустые клетки`}\
-              price={prices.binoculars}\
+              desc={`Открывает ${inv.hunter.binocularsPlus ? "2" : "1"} пустые клетки`}
+              price={prices.binoculars}
               owned={inv.hunter.binoculars}
               onBuy={() => buy("binoculars", "hunter")}
               disabled={playerCharacter !== "hunter"}
@@ -1679,12 +1722,12 @@ function ShopDialog({
                   desc="Подсвечивает область с Бобром"
                   price={prices.compass}
                   owned={inv.hunter.compass}
-                  onBuy={() => buy("compass", "hunter")}\
+                  onBuy={() => buy("compass", "hunter")}
                   disabled={playerCharacter !== "hunter"}
                 />
                 <ShopRow
-                  icon="/images/ui/trap.png\"\
-                  title=\"Капкан"
+                  icon="/images/ui/trap.png"
+                  title="Капкан"
                   desc="Обездвиживает Утку на 1 ход"
                   price={prices.trap}
                   owned={inv.hunter.trap}
@@ -1706,13 +1749,13 @@ function ShopDialog({
               title="Перелёт"
               desc="Перемещение на любую клетку"
               price={prices.flight}
-              owned={inv.duck.flight}\
-              onBuy={() => buy("flight", "duck")}\
+              owned={inv.duck.flight}
+              onBuy={() => buy("flight", "duck")}
               disabled={playerCharacter !== "duck"}
             />
             <ShopRow
               icon="/images/ui/shield-feather.png"
-              title={\`Бронированное перо R${inv.duck.armoredFeatherRank + 1}`}
+              title={`Бронированное перо R${inv.duck.armoredFeatherRank + 1}`}
               desc="Возврат части ставки при проигрыше"
               price={prices.featherRank[inv.duck.armoredFeatherRank] ?? 0}
               owned={inv.duck.armoredFeatherRank >= 9}
@@ -1745,8 +1788,8 @@ function ShopRow({
 }) {
   return (
     <div className="flex items-center justify-between py-2">
-      <div className="flex items-center gap-3 min-w-0">\
-        <Image src={icon || "/placeholder.svg\"} alt={title} width={28} height={28} />
+      <div className="flex items-center gap-3 min-w-0">
+        <Image src={icon || "/placeholder.svg"} alt={title} width={28} height={28} />
         <div className="min-w-0">
           <div className="text-sm font-medium truncate">{title}</div>
           <div className="text-xs text-muted-foreground truncate">{desc}</div>
@@ -1759,5 +1802,5 @@ function ShopRow({
         </Button>
       </div>
     </div>
-  )\
+  )
 }

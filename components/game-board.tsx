@@ -24,21 +24,9 @@ type Props = {
   lastShotAnim?: { cell: number; id: number } | null
   canClick: (idx: number) => boolean
   onCellClick: (idx: number) => void
-  playerRole?: "hunter" | "duck" | null
-  duckPosition?: number | null
 }
 
-export default function GameBoard({
-  rows,
-  cols,
-  activeCells,
-  overlays,
-  lastShotAnim,
-  canClick,
-  onCellClick,
-  playerRole,
-  duckPosition,
-}: Props) {
+export default function GameBoard({ rows, cols, activeCells, overlays, lastShotAnim, canClick, onCellClick }: Props) {
   const total = rows * cols
   const indices = Array.from({ length: total }, (_, i) => i)
 
@@ -53,7 +41,6 @@ export default function GameBoard({
         const isActive = activeCells.includes(i)
         const o = overlays[i] || {}
         const playShotAnim = lastShotAnim && lastShotAnim.cell === i
-        const showDuckPosition = playerRole === "duck" && duckPosition === i
 
         return (
           <button
@@ -70,17 +57,9 @@ export default function GameBoard({
               o.shot && "bg-neutral-200/80 dark:bg-neutral-800/70 line-through",
               o.compassHint && "ring-2 ring-amber-400/70",
               o.binocularsUsed && "ring-4 ring-yellow-400/80 bg-yellow-100/40 dark:bg-yellow-900/30 shadow-lg",
-              showDuckPosition && "ring-4 ring-emerald-500/80 bg-emerald-200/60 dark:bg-emerald-800/40",
             )}
             aria-disabled={!canClick(i)}
           >
-            {showDuckPosition && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-2xl drop-shadow-lg animate-pulse">🦆</div>
-                <div className="absolute top-1 left-1 text-xs bg-emerald-500 text-white px-1 rounded font-bold">ВЫ</div>
-              </div>
-            )}
-
             {/* Композиционные оверлеи */}
             {o.shot && (
               <div className="absolute inset-0 flex items-center justify-center">

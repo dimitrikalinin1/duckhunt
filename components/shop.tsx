@@ -46,7 +46,7 @@ type Props = {
   purchasedItems: string[]
   onPurchase: (itemId: string, price: number) => void
   playerId?: string
-  onCoinsUpdate?: (newCoins: number) => void // добавляем callback для обновления баланса
+  onCoinsUpdate?: (newCoins: number) => void
 }
 
 export default function Shop({ playerRole, coins, purchasedItems, onPurchase, playerId, onCoinsUpdate }: Props) {
@@ -73,7 +73,7 @@ export default function Shop({ playerRole, coins, purchasedItems, onPurchase, pl
 
         onPurchase(item.id, item.price)
         if (onCoinsUpdate) {
-          onCoinsUpdate(newCoins) // обновляем баланс в родительском компоненте
+          onCoinsUpdate(newCoins)
         }
       } catch (error) {
         console.error("Ошибка при покупке предмета:", error)

@@ -116,19 +116,6 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
     setCoins(newCoins)
   }
 
-  const handleToggleReady = async () => {
-    if (!currentPlayer?.role) return
-
-    try {
-      const result = await selectRole(lobbyId, playerId, currentPlayer.role)
-      if (result.success && result.lobby) {
-        setLobby(result.lobby)
-      }
-    } catch (error) {
-      console.error("Ошибка при изменении готовности:", error)
-    }
-  }
-
   if (!lobby) {
     return (
       <div className="container mx-auto p-4 md:p-6 lg:p-8">
@@ -176,7 +163,7 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
               purchasedItems={purchasedItems}
               onPurchase={handlePurchase}
               playerId={playerId}
-              onCoinsUpdate={handleCoinsUpdate}
+              onCoinsUpdate={handleCoinsUpdate} // передаем callback для обновления баланса
             />
           </div>
         )}
@@ -264,12 +251,18 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
         {currentPlayer?.role && lobby.status === "waiting" && (
           <div className="mb-6 text-center">
             <Button
-              onClick={handleToggleReady}
+              onClick={async () => {
+                // Логика подтверждения готовности
+                const result = await selectRole(lobbyId, playerId, currentPlayer.role)
+                if (result.success && result.lobby) {
+                  setLobby(result.lobby)
+                }
+              }}
               size="lg"
-              variant={currentPlayer.ready ? "secondary" : "default"}
-              className="px-8"
+              className="px-8 py-3 text-lg font-semibold"
+              disabled={!currentPlayer.role}
             >
-              {currentPlayer.ready ? "Отменить готовность" : "Готов к игре!"}
+              Готов к игре!
             </Button>
           </div>
         )}
@@ -320,11 +313,9 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
             <div className="text-muted-foreground">
               {lobby.players.length < 2
                 ? "Ожидание второго игрока..."
-                : !lobby.players.every((p) => p.role)
-                  ? "Выберите роли для продолжения"
-                  : !lobby.players.every((p) => p.ready)
-                    ? "Нажмите 'Готов' для начала игры"
-                    : "Все готовы! Игра скоро начнется..."}
+                : lobby.players.every((p) => p.role && p.ready)
+                  ? "Все готовы! Игра скоро начнется..."
+                  : "Выберите роли для начала игры"}
             </div>
           )}
           {lobby.status === "countdown" && (
