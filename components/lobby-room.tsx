@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { ArrowLeft, Copy, Users } from "lucide-react"
-import { getLobbyState, leaveLobby, selectRole } from "@/app/lobby/actions"
+import { getLobbyState, leaveLobby, selectRole, setPlayerReady } from "@/app/lobby/actions"
 import type { Lobby, PlayerRole } from "@/lib/lobby-types"
 import Shop from "./shop"
 
@@ -120,10 +120,12 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
   const handleReadyToggle = async () => {
     try {
       console.log("Переключение готовности для игрока:", playerId)
-      const result = await selectRole(lobbyId, playerId, currentPlayer?.role || null)
+      const result = await setPlayerReady(lobbyId, playerId, !currentPlayer?.ready)
       if (result.success && result.lobby) {
         console.log("Обновленное лобби:", result.lobby)
         setLobby(result.lobby)
+      } else {
+        alert(result.error || "Не удалось изменить готовность")
       }
     } catch (error) {
       console.error("Ошибка при изменении готовности:", error)
