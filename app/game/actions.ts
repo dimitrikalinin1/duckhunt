@@ -76,17 +76,21 @@ export async function makeDuckInitialMove(lobbyId: string, playerId: string) {
     return { success: false, error: "Invalid game state" }
   }
 
-  // Находим безопасные клетки (не бобр и не смотритель)
-  const safeCells = currentState.activeCells.filter(
-    (cell) => cell !== currentState.beaverCell && cell !== currentState.wardenCell,
-  )
+  const availableCells = currentState.activeCells
 
-  if (safeCells.length === 0) {
-    return { success: false, error: "No safe cells available" }
+  if (availableCells.length === 0) {
+    return { success: false, error: "No cells available" }
   }
 
-  // Выбираем случайную безопасную клетку
-  const duckCell = sample(safeCells)
+  // Выбираем случайную клетку (может быть бобр)
+  const duckCell = sample(availableCells)
+
+  let outcome = null
+  if (duckCell === currentState.beaverCell) {
+    outcome = { winner: "hunter", reason: "duck-hit-beaver" }
+  } else if (duckCell === currentState.wardenCell) {
+    outcome = { winner: "hunter", reason: "duck-hit-warden" }
+  }
 
   // Проверяем капкан
   let duckSnaredTurns = 0
@@ -98,12 +102,13 @@ export async function makeDuckInitialMove(lobbyId: string, playerId: string) {
   const updatedState = updateGameState(lobbyId, {
     duckCell,
     duckSnaredTurns,
-    turn: "hunter",
+    turn: outcome ? "ended" : "hunter",
+    outcome,
     binocularUsedThisTurn: false,
     lastAction: {
       type: "duck-initial-move",
       playerId,
-      data: { cell: duckCell, trapped: duckSnaredTurns > 0 },
+      data: { cell: duckCell, trapped: duckSnaredTurns > 0, hitNPC: !!outcome },
       timestamp: Date.now(),
     },
   })
@@ -258,18 +263,15 @@ export async function makeDuckMove(lobbyId: string, playerId: string, action: "s
       return { success: false, error: "Invalid cell" }
     }
 
-    // Утка не может лететь в стрелянную клетку (кроме призрачного полета)
     if (currentState.shotCells.includes(targetCell) && !currentState.inventory.duck.ghostFlight) {
       return { success: false, error: "Утка не может лететь в обстрелянную клетку" }
     }
 
-    // Утка не может лететь туда, где был бинокль
     if ((currentState.binocularsUsedCells || []).includes(targetCell)) {
       return { success: false, error: "Утка не может лететь туда, где использовался бинокль" }
     }
 
-    // Добавляем уведомление для охотника о перелете утки
-    newNotifications.push("🦆 Утка перелетела!")
+    newNotifications.push("🦆 Утка перелетела, но куда?")
 
     // Проверяем попадание на NPC
     if (currentState.wardenCell === targetCell) {
@@ -337,6 +339,7 @@ export async function useBinoculars(lobbyId: string, playerId: string) {
   if (!targetCell) {
     const updatedState = updateGameState(lobbyId, {
       binocularUsedThisTurn: true,
+      turn: "duck", // Переход хода к утке после использования бинокля
       lastAction: {
         type: "use-binoculars",
         playerId,
@@ -351,13 +354,16 @@ export async function useBinoculars(lobbyId: string, playerId: string) {
   const newBinocularsUsedCells = [...(currentState.binocularsUsedCells || []), targetCell]
   const newNotifications = [...(currentState.notifications || [])]
 
-  // Проверяем что в клетке
   let revealed = []
-  if (empties.includes(targetCell)) {
-    revealed = [targetCell]
-    newNotifications.push(`🔍 Бинокль показал пустую клетку`)
+  if (targetCell === currentState.duckCell) {
+    newNotifications.push(`🔍 Бинокль обнаружил утку в клетке ${targetCell + 1}!`)
+  } else if (targetCell === currentState.beaverCell) {
+    newNotifications.push(`🔍 Бинокль показал бобра в клетке ${targetCell + 1}`)
+  } else if (targetCell === currentState.wardenCell) {
+    newNotifications.push(`🔍 Бинокль показал смотрителя в клетке ${targetCell + 1}`)
   } else {
-    newNotifications.push(`🔍 Бинокль использован`)
+    revealed = [targetCell]
+    newNotifications.push(`🔍 Бинокль показал пустую клетку ${targetCell + 1}`)
   }
 
   const newRevealed = [...(currentState.revealedEmptyByBinoculars || []), ...revealed]
@@ -367,6 +373,7 @@ export async function useBinoculars(lobbyId: string, playerId: string) {
     binocularsUsedCells: newBinocularsUsedCells,
     notifications: newNotifications,
     binocularUsedThisTurn: true,
+    turn: "duck", // Переход хода к утке после использования бинокля
     lastAction: {
       type: "use-binoculars",
       playerId,

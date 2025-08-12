@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Users, Plus, RefreshCw, ArrowLeft } from "lucide-react"
+import { Users, Plus, RefreshCw } from "lucide-react"
 import { createNewLobby, getAvailableLobbies, joinLobby } from "@/app/lobby/actions"
 import type { Lobby } from "@/lib/lobby-types"
 
@@ -63,15 +63,6 @@ export default function LobbyBrowser({ playerId, playerName, onJoinLobby, onBack
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
       <div className="mx-auto max-w-4xl">
-        {onBackToMenu && (
-          <div className="mb-4">
-            <Button variant="outline" onClick={onBackToMenu}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Главное меню
-            </Button>
-          </div>
-        )}
-
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">Многопользовательское лобби</h1>
           <p className="text-muted-foreground">Создайте игру или присоединитесь к существующей</p>

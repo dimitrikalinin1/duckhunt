@@ -8,6 +8,7 @@ import { ArrowLeft, Copy, Users } from "lucide-react"
 import Image from "next/image"
 import { getLobbyState, leaveLobby, selectRole } from "@/app/lobby/actions"
 import type { Lobby, PlayerRole } from "@/lib/lobby-types"
+import Shop from "./shop"
 
 type Props = {
   lobbyId: string
@@ -21,6 +22,8 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
   const [lobby, setLobby] = useState<Lobby | null>(null)
   const [countdown, setCountdown] = useState<number | null>(null)
   const [copied, setCopied] = useState(false)
+  const [coins, setCoins] = useState(100) // Начальные монеты
+  const [purchasedItems, setPurchasedItems] = useState<string[]>([])
 
   const loadLobbyState = async () => {
     const result = await getLobbyState(lobbyId)
@@ -70,7 +73,45 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
   }
 
   const handleSelectRole = async (role: PlayerRole) => {
-    await selectRole(lobbyId, playerId, role)
+    try {
+      console.log("Выбираем роль:", role, "для игрока:", playerId)
+      const result = await selectRole(lobbyId, playerId, role)
+      console.log("Результат выбора роли:", result)
+
+      if (result.success && result.lobby) {
+        setLobby(result.lobby)
+        console.log("Обновлено состояние лобби:", result.lobby)
+        console.log(
+          "Текущий игрок после обновления:",
+          result.lobby.players.find((p) => p.id === playerId),
+        )
+      } else {
+        console.error("Ошибка выбора роли:", result.error)
+        alert(result.error || "Не удалось выбрать роль")
+      }
+    } catch (error) {
+      console.error("Ошибка при выборе роли:", error)
+      alert("Произошла ошибка при выборе роли")
+    }
+  }
+
+  const handleDeselectRole = async () => {
+    try {
+      console.log("Отменяем выбор роли для игрока:", playerId)
+      const result = await selectRole(lobbyId, playerId, null)
+      console.log("Результат отмены роли:", result)
+
+      if (result.success && result.lobby) {
+        setLobby(result.lobby)
+        console.log("Обновлено состояние лобби после отмены:", result.lobby)
+      } else {
+        console.error("Ошибка отмены роли:", result.error)
+        alert(result.error || "Не удалось отменить выбор роли")
+      }
+    } catch (error) {
+      console.error("Ошибка при отмене роли:", error)
+      alert("Произошла ошибка при отмене роли")
+    }
   }
 
   const handleCopyCode = async () => {
@@ -82,6 +123,13 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
   const handleBackToMenu = () => {
     if (onBackToMenu) {
       onBackToMenu()
+    }
+  }
+
+  const handlePurchase = (itemId: string, price: number) => {
+    if (coins >= price && !purchasedItems.includes(itemId)) {
+      setCoins((prev) => prev - price)
+      setPurchasedItems((prev) => [...prev, itemId])
     }
   }
 
@@ -105,12 +153,6 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
               <ArrowLeft className="mr-2 h-4 w-4" />
               Покинуть лобби
             </Button>
-            {onBackToMenu && (
-              <Button variant="ghost" onClick={handleBackToMenu}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Главное меню
-              </Button>
-            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -130,6 +172,18 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
               <div className="text-lg font-medium">Игра начинается...</div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Магазин */}
+        {lobby.status === "waiting" && (
+          <div className="mb-6">
+            <Shop
+              playerRole={currentPlayer?.role || null}
+              coins={coins}
+              purchasedItems={purchasedItems}
+              onPurchase={handlePurchase}
+            />
+          </div>
         )}
 
         <div className="grid md:grid-cols-2 gap-6 mb-6">
@@ -155,14 +209,20 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
             </CardHeader>
             <CardContent>
               <Button
-                onClick={() => handleSelectRole(currentPlayer?.role === "hunter" ? null : "hunter")}
+                onClick={() => {
+                  if (currentPlayer?.role === "hunter") {
+                    handleDeselectRole()
+                  } else {
+                    handleSelectRole("hunter")
+                  }
+                }}
                 disabled={
                   lobby.players.some((p) => p.id !== playerId && p.role === "hunter") || lobby.status !== "waiting"
                 }
                 className="w-full"
                 variant={currentPlayer?.role === "hunter" ? "secondary" : "outline"}
               >
-                {currentPlayer?.role === "hunter" ? "Выбрано" : "Выбрать охотника"}
+                {currentPlayer?.role === "hunter" ? "Отменить выбор" : "Выбрать охотника"}
               </Button>
             </CardContent>
           </Card>
@@ -189,14 +249,20 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
             </CardHeader>
             <CardContent>
               <Button
-                onClick={() => handleSelectRole(currentPlayer?.role === "duck" ? null : "duck")}
+                onClick={() => {
+                  if (currentPlayer?.role === "duck") {
+                    handleDeselectRole()
+                  } else {
+                    handleSelectRole("duck")
+                  }
+                }}
                 disabled={
                   lobby.players.some((p) => p.id !== playerId && p.role === "duck") || lobby.status !== "waiting"
                 }
                 className="w-full"
                 variant={currentPlayer?.role === "duck" ? "secondary" : "outline"}
               >
-                {currentPlayer?.role === "duck" ? "Выбрано" : "Выбрать утку"}
+                {currentPlayer?.role === "duck" ? "Отменить выбор" : "Выбрать утку"}
               </Button>
             </CardContent>
           </Card>

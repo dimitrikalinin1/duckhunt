@@ -56,7 +56,7 @@ export default function GameBoard({ rows, cols, activeCells, overlays, lastShotA
                 : "cursor-not-allowed",
               o.shot && "bg-neutral-200/80 dark:bg-neutral-800/70 line-through",
               o.compassHint && "ring-2 ring-amber-400/70",
-              o.binocularsUsed && "ring-2 ring-yellow-400/70 bg-yellow-50/30 dark:bg-yellow-900/20",
+              o.binocularsUsed && "ring-4 ring-yellow-400/80 bg-yellow-100/40 dark:bg-yellow-900/30 shadow-lg",
             )}
             aria-disabled={!canClick(i)}
           >
@@ -74,8 +74,13 @@ export default function GameBoard({ rows, cols, activeCells, overlays, lastShotA
             )}
 
             {o.binocularsUsed && (
-              <div className="absolute top-1 right-1">
-                <div className="text-lg">👁</div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="animate-pulse">
+                  <div className="text-2xl drop-shadow-lg">👁</div>
+                </div>
+                <div className="absolute top-1 right-1 text-xs bg-yellow-400 text-yellow-900 px-1 rounded font-bold">
+                  🔍
+                </div>
               </div>
             )}
 

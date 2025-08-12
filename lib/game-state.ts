@@ -58,7 +58,7 @@ export function createInitialGameState(lobbyId: string): GameState {
     wardenCell: null,
     duckCell: null,
     ammo: 3,
-    turn: "duck-initial",
+    turn: "duck-initial", // Игра начинается с хода утки
     outcome: null,
     hunterBet: 25,
     duckBet: 25,
@@ -84,7 +84,7 @@ export function createInitialGameState(lobbyId: string): GameState {
         eagleEyeUsed: false,
       },
       duck: {
-        flight: true,
+        flight: true, // Базовый перелет доступен с самого начала
         safeFlight: false,
         armoredFeatherRank: 0,
         autoFlight: false,
