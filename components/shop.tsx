@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { addItemToInventory, updatePlayerCoins } from "@/lib/player-service"
+import { HUNTER_PERKS, DUCK_PERKS, canUpgradeArmoredFeather } from "@/lib/perks-system"
 
 import { useState } from "react"
 import { Coins, ShoppingCart, Eye, Shield } from "lucide-react"
@@ -14,28 +15,9 @@ type ShopItem = {
   icon: React.ReactNode
   category: "hunter" | "duck" | "universal"
   effect: string
+  levelBonus?: number
+  rank?: number
 }
-
-const SHOP_ITEMS: ShopItem[] = [
-  {
-    id: "improved-binoculars",
-    name: "Бинокль",
-    description: "Позволяет подсветить клетку и увидеть что в ней",
-    price: 30,
-    icon: <Eye className="h-4 w-4" />,
-    category: "hunter",
-    effect: "Разведка клетки",
-  },
-  {
-    id: "armored-feather",
-    name: "Бронированное перо",
-    description: "Защищает от одного выстрела в игре",
-    price: 40,
-    icon: <Shield className="h-4 w-4" />,
-    category: "duck",
-    effect: "Защита от выстрела",
-  },
-]
 
 type Props = {
   playerRole: "hunter" | "duck" | null
@@ -44,21 +26,74 @@ type Props = {
   onPurchase: (itemId: string, price: number) => void
   playerId?: string
   onCoinsUpdate?: (newCoins: number) => void
+  currentArmoredFeatherRank?: number
+  hasBinoculars?: boolean
 }
 
-export default function Shop({ playerRole, coins, purchasedItems, onPurchase, playerId, onCoinsUpdate }: Props) {
+export default function Shop({
+  playerRole,
+  coins,
+  purchasedItems,
+  onPurchase,
+  playerId,
+  onCoinsUpdate,
+  currentArmoredFeatherRank = 0,
+  hasBinoculars = false,
+}: Props) {
   const [purchasing, setPurchasing] = useState<string | null>(null)
 
-  const availableItems = SHOP_ITEMS.filter((item) => {
-    if (!playerRole) return item.category === "universal"
-    return item.category === playerRole || item.category === "universal"
-  })
+  const getAvailableItems = (): ShopItem[] => {
+    const items: ShopItem[] = []
+
+    if (playerRole === "hunter" && !hasBinoculars) {
+      const binocularsPerk = HUNTER_PERKS.binoculars
+      items.push({
+        id: "binoculars",
+        name: binocularsPerk.name,
+        description: binocularsPerk.description,
+        price: binocularsPerk.cost,
+        icon: <Eye className="h-4 w-4" />,
+        category: "hunter",
+        effect: `+${binocularsPerk.levelBonus} уровень персонажа`,
+        levelBonus: binocularsPerk.levelBonus,
+      })
+    }
+
+    if (playerRole === "duck" && canUpgradeArmoredFeather(currentArmoredFeatherRank)) {
+      const featherPerk = DUCK_PERKS["armored-feather"]
+      const nextRank = currentArmoredFeatherRank + 1
+      const nextRankData = featherPerk.ranks[nextRank as 1 | 2 | 3]
+
+      if (nextRankData) {
+        items.push({
+          id: `armored-feather-${nextRank}`,
+          name: `${featherPerk.name} (Уровень ${nextRank})`,
+          description: `Сохраняет ${nextRankData.protection}% ставки при проигрыше`,
+          price: nextRankData.cost,
+          icon: <Shield className="h-4 w-4" />,
+          category: "duck",
+          effect: `+${nextRankData.levelBonus} уровень персонажа`,
+          levelBonus: nextRankData.levelBonus,
+          rank: nextRank,
+        })
+      }
+    }
+
+    return items
+  }
+
+  const availableItems = getAvailableItems()
 
   const handlePurchase = async (item: ShopItem) => {
-    if (coins >= item.price && !purchasedItems.includes(item.id) && playerId) {
+    if (coins >= item.price && playerId) {
       setPurchasing(item.id)
       try {
-        await addItemToInventory(playerId, item.id, 1)
+        if (item.id === "binoculars") {
+          await addItemToInventory(playerId, "binoculars", 1)
+        } else if (item.id.startsWith("armored-feather-") && item.rank) {
+          await addItemToInventory(playerId, "armored-feather", item.rank)
+        }
+
         const newCoins = coins - item.price
         await updatePlayerCoins(playerId, newCoins)
 
@@ -83,8 +118,8 @@ export default function Shop({ playerRole, coins, purchasedItems, onPurchase, pl
             <ShoppingCart className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h3 className="text-2xl font-bold text-white">🛒 Магазин улучшений</h3>
-            <p className="text-slate-400">Подготовьтесь к охоте</p>
+            <h3 className="text-2xl font-bold text-white">🛒 Магазин перков</h3>
+            <p className="text-slate-400">Улучшите своего персонажа</p>
           </div>
         </div>
         <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-amber-500 rounded-xl shadow-lg shadow-yellow-500/25">
@@ -96,7 +131,7 @@ export default function Shop({ playerRole, coins, purchasedItems, onPurchase, pl
       {!playerRole ? (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">🎭</div>
-          <div className="text-slate-300 text-lg">Выберите роль, чтобы увидеть доступные улучшения</div>
+          <div className="text-slate-300 text-lg">Выберите роль, чтобы увидеть доступные перки</div>
         </div>
       ) : (
         <>
@@ -135,8 +170,15 @@ export default function Shop({ playerRole, coins, purchasedItems, onPurchase, pl
                         <div>
                           <h4 className="text-xl font-bold text-white mb-1">{item.name}</h4>
                           <p className="text-slate-400 text-sm mb-2">{item.description}</p>
-                          <div className="px-3 py-1 bg-slate-700 rounded-lg text-xs text-slate-300 inline-block">
-                            {item.effect}
+                          <div className="flex gap-2">
+                            <div className="px-3 py-1 bg-slate-700 rounded-lg text-xs text-slate-300 inline-block">
+                              {item.effect}
+                            </div>
+                            {item.levelBonus && (
+                              <div className="px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg text-xs text-white inline-block">
+                                ⭐ +{item.levelBonus} уровень
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -186,8 +228,13 @@ export default function Shop({ playerRole, coins, purchasedItems, onPurchase, pl
 
           {availableItems.length === 0 && (
             <div className="text-center py-12">
-              <div className="text-6xl mb-4">🚫</div>
-              <div className="text-slate-300 text-lg">Нет доступных предметов для вашей роли</div>
+              <div className="text-6xl mb-4">🎉</div>
+              <div className="text-slate-300 text-lg">
+                {playerRole === "hunter" && hasBinoculars && "У вас уже есть все доступные перки!"}
+                {playerRole === "duck" &&
+                  !canUpgradeArmoredFeather(currentArmoredFeatherRank) &&
+                  "Бронированное перо прокачано до максимума!"}
+              </div>
             </div>
           )}
         </>

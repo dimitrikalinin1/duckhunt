@@ -29,6 +29,12 @@ export type GameState = {
     data: any
     timestamp: number
   }
+  playerLevels?: PlayerLevels
+}
+
+export type PlayerLevels = {
+  hunter: number
+  duck: number
 }
 
 // In-memory хранилище состояний игр
@@ -70,6 +76,10 @@ export function createInitialGameState(lobbyId: string): GameState {
     binocularUsedThisTurn: false,
     compassHint: [],
     duckSnaredTurns: 0,
+    playerLevels: {
+      hunter: 1,
+      duck: 1,
+    },
     inventory: {
       hunter: {
         binoculars: false,

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useEffect } from "react"
-import { Telescope, ArrowLeft, Volume2, VolumeX } from "lucide-react"
+import { Telescope, ArrowLeft, Volume2, VolumeX, Coins } from "lucide-react"
 import GameBoard, { type CellOverlay } from "./game-board"
 import { useSound } from "use-sound"
 import type { PlayerCharacter } from "@/lib/ai-opponent"
@@ -129,7 +129,6 @@ export default function GameSession({
       setError("Не удалось использовать бинокль. Попробуйте еще раз.")
     }
 
-    // Always call play() at the end to avoid conditional hook calls
     play()
   }, [lobbyId, playerId, gameState, loading, error, play])
 
@@ -331,6 +330,36 @@ export default function GameSession({
           </div>
         </div>
 
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="game-card text-center">
+            <div className="text-sm text-slate-400 mb-1">Ваша ставка</div>
+            <div className="flex items-center justify-center gap-2">
+              <Coins className="h-5 w-5 text-green-400" />
+              <span className="text-xl font-bold text-green-400">
+                {playerCharacter === "hunter" ? gameState.hunterBet : gameState.duckBet}
+              </span>
+            </div>
+          </div>
+
+          <div className="game-card text-center">
+            <div className="text-sm text-slate-400 mb-1">Банк</div>
+            <div className="flex items-center justify-center gap-2">
+              <Coins className="h-5 w-5 text-yellow-400" />
+              <span className="text-xl font-bold text-yellow-400">{gameState.hunterBet + gameState.duckBet}</span>
+            </div>
+          </div>
+
+          <div className="game-card text-center">
+            <div className="text-sm text-slate-400 mb-1">Ставка противника</div>
+            <div className="flex items-center justify-center gap-2">
+              <Coins className="h-5 w-5 text-red-400" />
+              <span className="text-xl font-bold text-red-400">
+                {playerCharacter === "hunter" ? gameState.duckBet : gameState.hunterBet}
+              </span>
+            </div>
+          </div>
+        </div>
+
         <div
           className={`game-card mb-6 text-center transition-all duration-500 ${
             canClick(0)
@@ -456,6 +485,32 @@ export default function GameSession({
                     {gameState.outcome.reason === "hunter-hit-beaver" && "Охотник подстрелил бобра!"}
                     {gameState.outcome.reason === "hunter-hit-warden" && "Охотник подстрелил смотрителя!"}
                   </div>
+
+                  {gameState.lastAction?.type === "game-ended" && (
+                    <div className="mt-4 p-4 bg-slate-800/50 rounded-xl">
+                      <div className="text-lg font-bold text-white mb-2">💰 Изменения баланса:</div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-300">{playerCharacter === "hunter" ? "Охотник:" : "Утка:"}</span>
+                        <span
+                          className={`font-bold text-lg ${
+                            (
+                              playerCharacter === "hunter"
+                                ? gameState.lastAction.data.hunterGoldChange
+                                : gameState.lastAction.data.duckGoldChange
+                            ) >= 0
+                              ? "text-green-400"
+                              : "text-red-400"
+                          }`}
+                        >
+                          {playerCharacter === "hunter"
+                            ? (gameState.lastAction.data.hunterGoldChange >= 0 ? "+" : "") +
+                              gameState.lastAction.data.hunterGoldChange
+                            : (gameState.lastAction.data.duckGoldChange >= 0 ? "+" : "") +
+                              gameState.lastAction.data.duckGoldChange}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

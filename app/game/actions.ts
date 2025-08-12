@@ -2,6 +2,8 @@
 
 import { getGameState, updateGameState, createInitialGameState } from "@/lib/game-state"
 import { LEVELS, gridSize } from "@/lib/game-config"
+import { calculateArmoredFeatherProtection } from "@/lib/perks-system"
+import { updatePlayerExperience } from "@/lib/player-service"
 
 // Вспомогательные функции
 function sample<T>(arr: T[]) {
@@ -211,6 +213,12 @@ export async function makeHunterShot(lobbyId: string, playerId: string, cell: nu
             timestamp: Date.now(),
           },
         })
+
+        // Автоматическое завершение игры с начислением опыта при окончании патронов
+        if (newAmmo <= 0) {
+          await endGameWithOutcome(lobbyId, { winner: "duck", reason: "hunter-out-of-ammo" }, playerId, undefined)
+        }
+
         return { success: true, state: updatedState }
       } else {
         outcome = { winner: "hunter", reason: "hunter-shot-duck" }
@@ -242,6 +250,11 @@ export async function makeHunterShot(lobbyId: string, playerId: string, cell: nu
       timestamp: Date.now(),
     },
   })
+
+  // Автоматическое завершение игры с начислением опыта при окончании игры
+  if (outcome) {
+    await endGameWithOutcome(lobbyId, outcome, playerId, undefined)
+  }
 
   return { success: true, state: updatedState }
 }
@@ -305,6 +318,11 @@ export async function makeDuckMove(lobbyId: string, playerId: string, action: "s
       timestamp: Date.now(),
     },
   })
+
+  // Автоматическое завершение игры с начислением опыта при попадании на NPC
+  if (outcome) {
+    await endGameWithOutcome(lobbyId, outcome, undefined, playerId)
+  }
 
   return { success: true, state: updatedState }
 }
@@ -465,4 +483,118 @@ export async function resetGame(lobbyId: string) {
 
   // Запускаем новый раунд
   return await initializeGame(lobbyId)
+}
+
+export async function purchasePerk(
+  lobbyId: string,
+  playerId: string,
+  perkType: "binoculars" | "armored-feather",
+  rank?: number,
+) {
+  const currentState = getGameState(lobbyId)
+  if (!currentState) {
+    return { success: false, error: "Game not found" }
+  }
+
+  let cost = 0
+  const newInventory = { ...currentState.inventory }
+  const newPlayerLevels = { ...currentState.playerLevels } || { hunter: 1, duck: 1 }
+
+  if (perkType === "binoculars") {
+    cost = 30
+    if (currentState.hunterGold < cost) {
+      return { success: false, error: "Недостаточно монет" }
+    }
+
+    newInventory.hunter.binoculars = true
+    newPlayerLevels.hunter += 1
+  } else if (perkType === "armored-feather" && rank) {
+    const costs = { 1: 40, 2: 80, 3: 120 }
+    cost = costs[rank as 1 | 2 | 3] || 0
+
+    if (currentState.duckGold < cost) {
+      return { success: false, error: "Недостаточно монет" }
+    }
+
+    if (rank <= currentState.inventory.duck.armoredFeatherRank) {
+      return { success: false, error: "Уже куплен этот уровень или выше" }
+    }
+
+    newInventory.duck.armoredFeatherRank = rank
+    newPlayerLevels.duck += 1
+  }
+
+  const updatedState = updateGameState(lobbyId, {
+    inventory: newInventory,
+    playerLevels: newPlayerLevels,
+    hunterGold: perkType === "binoculars" ? currentState.hunterGold - cost : currentState.hunterGold,
+    duckGold: perkType === "armored-feather" ? currentState.duckGold - cost : currentState.duckGold,
+    lastAction: {
+      type: "purchase-perk",
+      playerId,
+      data: { perkType, rank, cost },
+      timestamp: Date.now(),
+    },
+  })
+
+  return { success: true, state: updatedState }
+}
+
+export async function endGameWithOutcome(
+  lobbyId: string,
+  outcome: any,
+  hunterPlayerId?: string,
+  duckPlayerId?: string,
+) {
+  const currentState = getGameState(lobbyId)
+  if (!currentState) {
+    return { success: false, error: "Game not found" }
+  }
+
+  let hunterGoldChange = 0
+  let duckGoldChange = 0
+
+  if (outcome.winner === "hunter") {
+    hunterGoldChange = currentState.duckBet
+    duckGoldChange = -currentState.duckBet
+
+    if (currentState.inventory.duck.armoredFeatherRank > 0) {
+      const protection = calculateArmoredFeatherProtection(currentState.inventory.duck.armoredFeatherRank)
+      const savedAmount = Math.floor(currentState.duckBet * (protection / 100))
+      duckGoldChange += savedAmount
+      hunterGoldChange -= savedAmount
+    }
+  } else {
+    duckGoldChange = currentState.hunterBet
+    hunterGoldChange = -currentState.hunterBet
+  }
+
+  // Добавление начисления опыта за игру
+  const baseExperience = 50
+  const winnerBonus = 25
+
+  if (hunterPlayerId) {
+    const hunterExp = outcome.winner === "hunter" ? baseExperience + winnerBonus : baseExperience
+    await updatePlayerExperience(hunterPlayerId, "hunter", hunterExp)
+  }
+
+  if (duckPlayerId) {
+    const duckExp = outcome.winner === "duck" ? baseExperience + winnerBonus : baseExperience
+    await updatePlayerExperience(duckPlayerId, "duck", duckExp)
+  }
+
+  const updatedState = updateGameState(lobbyId, {
+    outcome,
+    turn: "ended",
+    hunterGold: currentState.hunterGold + hunterGoldChange,
+    duckGold: currentState.duckGold + duckGoldChange,
+    lastAction: {
+      type: "game-ended",
+      playerId: "system",
+      data: { outcome, hunterGoldChange, duckGoldChange },
+      timestamp: Date.now(),
+    },
+  })
+
+  return { success: true, state: updatedState }
 }
