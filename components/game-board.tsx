@@ -34,7 +34,7 @@ export default function GameBoard({ rows, cols, activeCells, overlays, lastShotA
     <div
       role="grid"
       aria-label="Игровое поле"
-      className="grid gap-2 sm:gap-3 md:gap-4"
+      className="grid gap-3 p-4"
       style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
     >
       {indices.map((i) => {
@@ -49,67 +49,88 @@ export default function GameBoard({ rows, cols, activeCells, overlays, lastShotA
             role="gridcell"
             onClick={() => onCellClick(i)}
             className={cn(
-              "relative aspect-square rounded-xl border text-sm transition-transform duration-150 transform-gpu overflow-hidden",
-              isActive ? "bg-emerald-50/80 dark:bg-emerald-950/50" : "bg-muted/70 opacity-60",
-              canClick(i)
-                ? "hover:scale-[1.04] hover:shadow-md hover:ring-2 hover:ring-emerald-400"
-                : "cursor-not-allowed",
-              o.shot && "bg-neutral-200/80 dark:bg-neutral-800/70 line-through",
-              o.compassHint && "ring-2 ring-amber-400/70",
-              o.binocularsUsed && "ring-4 ring-yellow-400/80 bg-yellow-100/40 dark:bg-yellow-900/30 shadow-lg",
+              "relative aspect-square rounded-2xl border-2 text-sm transition-all duration-300 transform-gpu overflow-hidden group",
+              "bg-gradient-to-br from-slate-700 to-slate-800 border-slate-600",
+              isActive && "from-emerald-800/50 to-green-800/50 border-emerald-500/50 shadow-lg shadow-emerald-500/20",
+              canClick(i) &&
+                "hover:scale-110 hover:shadow-xl hover:shadow-cyan-500/30 hover:border-cyan-400 hover:from-cyan-800/30 hover:to-blue-800/30 cursor-pointer",
+              !canClick(i) && "cursor-not-allowed opacity-60",
+              o.shot && "from-red-900/30 to-red-800/30 border-red-500/50 shadow-lg shadow-red-500/20",
+              o.compassHint && "ring-4 ring-amber-400/70 animate-pulse-glow",
+              o.binocularsUsed &&
+                "ring-4 ring-yellow-400/80 from-yellow-900/30 to-yellow-800/30 border-yellow-500/50 shadow-lg shadow-yellow-500/30 animate-pulse-glow",
             )}
             aria-disabled={!canClick(i)}
           >
-            {/* Композиционные оверлеи */}
             {o.shot && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-neutral-400/30 dark:bg-neutral-700/40 shadow-inner ring-1 ring-black/10" />
+                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-red-500/30 to-red-700/30 shadow-inner ring-2 ring-red-400/50 animate-pulse" />
+                <div className="absolute text-2xl">💥</div>
               </div>
             )}
 
             {o.revealedEmpty && !o.shot && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="px-2 py-1 rounded bg-emerald-200 text-emerald-900 text-xs">{"ПУСТО"}</div>
+                <div className="px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-500 text-white text-xs font-bold shadow-lg animate-bounce-in">
+                  ПУСТО
+                </div>
               </div>
             )}
 
             {o.binocularsUsed && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="animate-pulse">
-                  <div className="text-2xl drop-shadow-lg">👁</div>
+                  <div className="text-4xl drop-shadow-lg filter brightness-110">👁</div>
                 </div>
-                <div className="absolute top-1 right-1 text-xs bg-yellow-400 text-yellow-900 px-1 rounded font-bold">
+                <div className="absolute top-2 right-2 w-6 h-6 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center text-xs font-bold animate-spin">
                   🔍
+                </div>
+              </div>
+            )}
+
+            {o.duck && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="relative">
+                  <div className="text-5xl drop-shadow-2xl animate-float filter brightness-110">🦆</div>
+                  <div className="absolute -top-2 -right-2 w-4 h-4 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full animate-pulse shadow-lg shadow-green-500/50"></div>
+                  <div className="absolute inset-0 rounded-full bg-green-400/20 animate-ping"></div>
                 </div>
               </div>
             )}
 
             {/* Легендарный подсвет "утки" (одноразовый эффект) */}
             {o.eagleEyeDuck && (
-              <div className="absolute inset-0 flex items-center justify-center text-3xl drop-shadow">{"🦆"}</div>
+              <div className="absolute inset-0 flex items-center justify-center text-4xl drop-shadow-2xl animate-bounce">
+                🦆
+              </div>
             )}
 
-            {/* Показываем НПС при конце/раскрытии */}
-            {o.beaver && <div className="absolute inset-0 flex items-center justify-center text-3xl">{"🦫"}</div>}
+            {o.beaver && (
+              <div className="absolute inset-0 flex items-center justify-center text-4xl drop-shadow-2xl animate-float">
+                🦫
+              </div>
+            )}
             {o.warden && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <Image src="/images/ui/ranger.png" alt="Смотритель" width={36} height={36} />
+                <Image src="/images/ui/ranger.png" alt="Смотритель" width={48} height={48} className="drop-shadow-lg" />
               </div>
             )}
             {o.trap && (
-              <div className="absolute right-1 bottom-1">
-                <Image src="/images/ui/trap.png" alt="Капкан" width={20} height={20} />
+              <div className="absolute right-2 bottom-2">
+                <Image
+                  src="/images/ui/trap.png"
+                  alt="Капкан"
+                  width={24}
+                  height={24}
+                  className="drop-shadow-lg animate-pulse"
+                />
               </div>
             )}
 
-            {/* Показываем утку с улучшенной визуализацией */}
-            {o.duck && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="relative">
-                  <div className="text-4xl drop-shadow-lg animate-bounce">🦆</div>
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                </div>
-              </div>
+            <div className="absolute top-1 left-1 text-xs text-slate-400 font-mono opacity-50">{i + 1}</div>
+
+            {canClick(i) && (
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/0 to-blue-400/0 group-hover:from-cyan-400/20 group-hover:to-blue-400/20 transition-all duration-300 rounded-2xl"></div>
             )}
 
             {playShotAnim && <ShotSmoke keyId={lastShotAnim!.id} />}

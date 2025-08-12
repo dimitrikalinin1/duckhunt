@@ -1,11 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Copy, Users } from "lucide-react"
-import Image from "next/image"
 import { getLobbyState, leaveLobby, selectRole } from "@/app/lobby/actions"
 import type { Lobby, PlayerRole } from "@/lib/lobby-types"
 import Shop from "./shop"
@@ -140,207 +136,217 @@ export default function LobbyRoom({ lobbyId, playerId, onLeaveLobby, onStartGame
   const currentPlayer = lobby.players.find((p) => p.id === playerId)
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleLeaveLobby}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Покинуть лобби
-            </Button>
-          </div>
+    <div className="space-y-6 animate-slide-in">
+      <div className="flex items-center justify-between">
+        <button onClick={handleLeaveLobby} className="game-button-secondary group">
+          <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+          Покинуть лобби
+        </button>
 
-          <div className="flex items-center gap-2">
-            <div className="font-mono font-bold text-xl">{lobbyId}</div>
-            <Button variant="outline" size="sm" onClick={handleCopyCode}>
-              <Copy className="h-4 w-4" />
-              {copied ? "Скопировано!" : "Копировать"}
-            </Button>
+        <div className="flex items-center gap-3">
+          <div className="font-mono font-bold text-2xl text-cyan-400 bg-slate-800/50 px-4 py-2 rounded-xl border border-slate-700">
+            {lobbyId}
+          </div>
+          <button onClick={handleCopyCode} className="game-button-secondary">
+            <Copy className="h-4 w-4 mr-2" />
+            {copied ? "✅" : "📋"}
+          </button>
+        </div>
+      </div>
+
+      {countdown !== null && (
+        <div className="game-card border-green-500/50 bg-gradient-to-r from-green-900/20 to-emerald-900/20 animate-pulse-glow">
+          <div className="text-center py-8">
+            <div className="text-8xl font-bold text-green-400 mb-4 animate-bounce">{countdown}</div>
+            <div className="text-2xl font-bold text-green-300">🚀 Игра начинается...</div>
           </div>
         </div>
+      )}
 
-        {countdown !== null && (
-          <Card className="mb-6 border-green-500 bg-green-50 dark:bg-green-950">
-            <CardContent className="text-center py-8">
-              <div className="text-6xl font-bold text-green-600 mb-2">{countdown}</div>
-              <div className="text-lg font-medium">Игра начинается...</div>
-            </CardContent>
-          </Card>
-        )}
-
-        {lobby.status === "waiting" && (
-          <div className="mb-6">
-            <Shop
-              playerRole={currentPlayer?.role || null}
-              coins={coins}
-              purchasedItems={purchasedItems}
-              onPurchase={handlePurchase}
-              playerId={playerId}
-              onCoinsUpdate={handleCoinsUpdate} // передаем callback для обновления баланса
-            />
-          </div>
-        )}
-
-        <div className="grid md:grid-cols-2 gap-6 mb-6">
-          <Card
-            className={`cursor-pointer transition-all ${
-              currentPlayer?.role === "hunter"
-                ? "ring-2 ring-amber-500 bg-amber-50 dark:bg-amber-950"
-                : "hover:shadow-lg"
-            }`}
-          >
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Image src="/images/emoji/hunter-grin.png" alt="Охотник" width={48} height={48} />
-                  <div>
-                    <CardTitle>Охотник</CardTitle>
-                    <div className="text-sm text-muted-foreground">Мастер точности</div>
-                  </div>
-                </div>
-                {lobby.players.some((p) => p.role === "hunter") && <Badge variant="secondary">Занято</Badge>}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Button
-                onClick={() => {
-                  if (currentPlayer?.role === "hunter") {
-                    handleDeselectRole()
-                  } else {
-                    handleSelectRole("hunter")
-                  }
-                }}
-                disabled={
-                  lobby.players.some((p) => p.id !== playerId && p.role === "hunter") || lobby.status !== "waiting"
-                }
-                className="w-full"
-                variant={currentPlayer?.role === "hunter" ? "secondary" : "outline"}
-              >
-                {currentPlayer?.role === "hunter" ? "Отменить выбор" : "Выбрать охотника"}
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card
-            className={`cursor-pointer transition-all ${
-              currentPlayer?.role === "duck"
-                ? "ring-2 ring-emerald-500 bg-emerald-50 dark:bg-emerald-950"
-                : "hover:shadow-lg"
-            }`}
-          >
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Image src="/images/emoji/duck-sneaky.png" alt="Утка" width={48} height={48} />
-                  <div>
-                    <CardTitle>Утка</CardTitle>
-                    <div className="text-sm text-muted-foreground">Мастер хитрости</div>
-                  </div>
-                </div>
-                {lobby.players.some((p) => p.role === "duck") && <Badge variant="secondary">Занято</Badge>}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Button
-                onClick={() => {
-                  if (currentPlayer?.role === "duck") {
-                    handleDeselectRole()
-                  } else {
-                    handleSelectRole("duck")
-                  }
-                }}
-                disabled={
-                  lobby.players.some((p) => p.id !== playerId && p.role === "duck") || lobby.status !== "waiting"
-                }
-                className="w-full"
-                variant={currentPlayer?.role === "duck" ? "secondary" : "outline"}
-              >
-                {currentPlayer?.role === "duck" ? "Отменить выбор" : "Выбрать утку"}
-              </Button>
-            </CardContent>
-          </Card>
+      {lobby.status === "waiting" && (
+        <div className="animate-slide-in">
+          <Shop
+            playerRole={currentPlayer?.role || null}
+            coins={coins}
+            purchasedItems={purchasedItems}
+            onPurchase={handlePurchase}
+            playerId={playerId}
+            onCoinsUpdate={handleCoinsUpdate}
+          />
         </div>
+      )}
 
-        {currentPlayer?.role && lobby.status === "waiting" && (
-          <div className="mb-6 text-center">
-            <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
-              <div className="text-amber-800 dark:text-amber-200 font-medium mb-2">⚠️ Подтвердите готовность к игре</div>
-              <div className="text-sm text-amber-600 dark:text-amber-400">
-                Игра начнется только после того, как оба игрока нажмут "Готов"
+      <div className="grid md:grid-cols-2 gap-6">
+        <div
+          className={`game-card group cursor-pointer transition-all duration-300 ${
+            currentPlayer?.role === "hunter"
+              ? "ring-2 ring-amber-400 bg-gradient-to-br from-amber-900/20 to-orange-900/20 animate-pulse-glow"
+              : "hover:scale-105"
+          }`}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-2xl animate-float">
+                🏹
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-white">Охотник</h3>
+                <p className="text-slate-400">Мастер точности</p>
               </div>
             </div>
-            <Button
-              onClick={handleReadyToggle}
-              size="lg"
-              className={`px-8 py-4 text-xl font-bold transition-all ${
-                currentPlayer.ready
-                  ? "bg-green-600 hover:bg-green-700 text-white animate-pulse"
-                  : "bg-blue-600 hover:bg-blue-700 text-white"
+            {lobby.players.some((p) => p.role === "hunter") && (
+              <span className="px-3 py-1 bg-red-500/20 text-red-400 rounded-lg text-sm border border-red-500/30">
+                Занято
+              </span>
+            )}
+          </div>
+          <button
+            onClick={() => {
+              if (currentPlayer?.role === "hunter") {
+                handleDeselectRole()
+              } else {
+                handleSelectRole("hunter")
+              }
+            }}
+            disabled={lobby.players.some((p) => p.id !== playerId && p.role === "hunter") || lobby.status !== "waiting"}
+            className={`w-full ${currentPlayer?.role === "hunter" ? "game-button-secondary" : "game-button-primary"}`}
+          >
+            {currentPlayer?.role === "hunter" ? "❌ Отменить выбор" : "🎯 Выбрать охотника"}
+          </button>
+        </div>
+
+        <div
+          className={`game-card group cursor-pointer transition-all duration-300 ${
+            currentPlayer?.role === "duck"
+              ? "ring-2 ring-emerald-400 bg-gradient-to-br from-emerald-900/20 to-green-900/20 animate-pulse-glow"
+              : "hover:scale-105"
+          }`}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center text-2xl animate-float">
+                🦆
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-white">Утка</h3>
+                <p className="text-slate-400">Мастер хитрости</p>
+              </div>
+            </div>
+            {lobby.players.some((p) => p.role === "duck") && (
+              <span className="px-3 py-1 bg-red-500/20 text-red-400 rounded-lg text-sm border border-red-500/30">
+                Занято
+              </span>
+            )}
+          </div>
+          <button
+            onClick={() => {
+              if (currentPlayer?.role === "duck") {
+                handleDeselectRole()
+              } else {
+                handleSelectRole("duck")
+              }
+            }}
+            disabled={lobby.players.some((p) => p.id !== playerId && p.role === "duck") || lobby.status !== "waiting"}
+            className={`w-full ${currentPlayer?.role === "duck" ? "game-button-secondary" : "game-button-primary"}`}
+          >
+            {currentPlayer?.role === "duck" ? "❌ Отменить выбор" : "🦆 Выбрать утку"}
+          </button>
+        </div>
+      </div>
+
+      {currentPlayer?.role && lobby.status === "waiting" && (
+        <div className="text-center animate-bounce-in">
+          <div className="game-card border-amber-500/50 bg-gradient-to-r from-amber-900/20 to-yellow-900/20 mb-6">
+            <div className="text-amber-300 font-bold text-lg mb-2">⚠️ Подтвердите готовность к игре</div>
+            <div className="text-amber-400/80">Игра начнется только после того, как оба игрока нажмут "Готов"</div>
+          </div>
+          <button
+            onClick={handleReadyToggle}
+            className={`px-12 py-4 text-2xl font-bold rounded-2xl transition-all duration-300 ${
+              currentPlayer.ready
+                ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white animate-pulse-glow shadow-lg shadow-green-500/25"
+                : "bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:scale-105 shadow-lg shadow-blue-500/25"
+            }`}
+            disabled={!currentPlayer.role}
+          >
+            {currentPlayer.ready ? "✅ Готов! Ожидание соперника..." : "🎯 Готов к игре!"}
+          </button>
+        </div>
+      )}
+
+      <div className="game-card">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
+            <Users className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-white">Игроки в лобби</h3>
+            <p className="text-slate-400">
+              {lobby.players.length}/{lobby.maxPlayers} участников
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {lobby.players.map((player) => (
+            <div
+              key={player.id}
+              className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
+                player.id === playerId
+                  ? "bg-gradient-to-r from-cyan-900/20 to-blue-900/20 border-cyan-500/30"
+                  : "bg-slate-800/30 border-slate-700"
               }`}
-              disabled={!currentPlayer.role}
             >
-              {currentPlayer.ready ? "✅ Готов! Ожидание соперника..." : "🎯 Готов к игре!"}
-            </Button>
-          </div>
-        )}
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Игроки в лобби ({lobby.players.length}/{lobby.maxPlayers})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {lobby.players.map((player) => (
-                <div
-                  key={player.id}
-                  className={`flex items-center justify-between p-3 rounded-lg border ${
-                    player.id === playerId ? "bg-accent/50" : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="font-medium">
-                      {player.name}
-                      {player.id === playerId && " (Вы)"}
-                    </div>
-                    {player.role && (
-                      <Badge variant={player.role === "hunter" ? "default" : "secondary"}>
-                        {player.role === "hunter" ? "Охотник" : "Утка"}
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {player.ready ? <Badge variant="default">Готов</Badge> : <Badge variant="outline">Не готов</Badge>}
-                  </div>
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white font-bold">
+                  {player.name.charAt(0).toUpperCase()}
                 </div>
-              ))}
-              {lobby.players.length < lobby.maxPlayers && (
-                <div className="flex items-center justify-center p-3 rounded-lg border border-dashed">
-                  <div className="text-muted-foreground">Ожидание игрока...</div>
+                <div>
+                  <div className="font-bold text-white">
+                    {player.name}
+                    {player.id === playerId && " (Вы)"}
+                  </div>
+                  {player.role && (
+                    <div className="text-sm text-slate-400">{player.role === "hunter" ? "🏹 Охотник" : "🦆 Утка"}</div>
+                  )}
                 </div>
-              )}
+              </div>
+              <div className="flex items-center gap-2">
+                {player.ready ? (
+                  <span className="px-3 py-1 bg-green-500/20 text-green-400 rounded-lg text-sm border border-green-500/30 animate-pulse-glow">
+                    ✅ Готов
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 bg-slate-700 text-slate-400 rounded-lg text-sm">⏳ Не готов</span>
+                )}
+              </div>
             </div>
-          </CardContent>
-        </Card>
-
-        <div className="mt-6 text-center">
-          {lobby.status === "waiting" && (
-            <div className="text-muted-foreground">
-              {lobby.players.length < 2
-                ? "⏳ Ожидание второго игрока..."
-                : !lobby.players.every((p) => p.role)
-                  ? "🎭 Выберите роли для продолжения"
-                  : !lobby.players.every((p) => p.ready)
-                    ? "⚡ Нажмите 'Готов' для начала игры"
-                    : "🚀 Все готовы! Запуск игры..."}
+          ))}
+          {lobby.players.length < lobby.maxPlayers && (
+            <div className="flex items-center justify-center p-4 rounded-xl border border-dashed border-slate-600 bg-slate-800/20">
+              <div className="text-slate-400 animate-pulse">⏳ Ожидание игрока...</div>
             </div>
-          )}
-          {lobby.status === "countdown" && (
-            <div className="text-green-600 font-bold text-lg">🎯 Игра начинается через {countdown} секунд!</div>
           )}
         </div>
+      </div>
+
+      <div className="text-center">
+        {lobby.status === "waiting" && (
+          <div className="text-slate-300 text-lg">
+            {lobby.players.length < 2
+              ? "⏳ Ожидание второго игрока..."
+              : !lobby.players.every((p) => p.role)
+                ? "🎭 Выберите роли для продолжения"
+                : !lobby.players.every((p) => p.ready)
+                  ? "⚡ Нажмите 'Готов' для начала игры"
+                  : "🚀 Все готовы! Запуск игры..."}
+          </div>
+        )}
+        {lobby.status === "countdown" && (
+          <div className="text-green-400 font-bold text-2xl animate-pulse">
+            🎯 Игра начинается через {countdown} секунд!
+          </div>
+        )}
       </div>
     </div>
   )
