@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Telescope } from "path-to-telescope-icon" // Import Telescope icon
+import { Telescope } from "lucide-react" // Import Telescope icon
 import { useState } from "react" // Import useState for managing state
 
 const GameSession = () => {
