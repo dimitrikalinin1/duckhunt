@@ -99,7 +99,7 @@ function defaultInv(): Inv {
       eagleEyeUsed: false,
     },
     duck: {
-      flight: false,
+      flight: true, // базовый перелет доступен с начала
       safeFlight: false,
       armoredFeatherRank: 0,
       autoFlight: false,
@@ -181,6 +181,7 @@ export default function GameSession({
   const [activeCells, setActiveCells] = useState<number[]>([])
   const [shotCells, setShotCells] = useState<Set<number>>(new Set())
   const [revealedEmptyByBinoculars, setRevealedEmptyByBinoculars] = useState<Set<number>>(new Set())
+  const [binocularsUsedCells, setBinocularsUsedCells] = useState<Set<number>>(new Set())
   const [beaverCell, setBeaverCell] = useState<number | null>(null)
   const [wardenCell, setWardenCell] = useState<number | null>(null)
   const [duckCell, setDuckCell] = useState<number | null>(null)
@@ -211,6 +212,8 @@ export default function GameSession({
   // Helpers
   const canChangeLevel = turn === "pre-bets" || turn === "ended"
 
+  const [notifications, setNotifications] = useState<string[]>([])
+
   // Event-driven синхронизация - вызывается только после действий игрока
   const syncAfterAction = useCallback(async () => {
     if (!isMultiplayer || !lobbyId) return
@@ -228,6 +231,7 @@ export default function GameSession({
           setActiveCells(gameState.activeCells || [])
           setShotCells(new Set(gameState.shotCells || []))
           setRevealedEmptyByBinoculars(new Set(gameState.revealedEmptyByBinoculars || []))
+          setBinocularsUsedCells(new Set(gameState.binocularsUsedCells || []))
           setBeaverCell(gameState.beaverCell)
           setWardenCell(gameState.wardenCell)
           setDuckCell(gameState.duckCell)
@@ -246,6 +250,18 @@ export default function GameSession({
           setCompassHint(gameState.compassHint || [])
           setBinocularUsedThisTurn(gameState.binocularUsedThisTurn || false)
           setDuckSnaredTurns(gameState.duckSnaredTurns || 0)
+
+          setNotifications(gameState.notifications || [])
+
+          if (gameState.notifications && gameState.notifications.length > 0) {
+            const lastNotification = gameState.notifications[gameState.notifications.length - 1]
+            if (lastNotification && !notifications.includes(lastNotification)) {
+              // Показываем уведомление на 3 секунды
+              setTimeout(() => {
+                setNotifications((prev) => prev.filter((n) => n !== lastNotification))
+              }, 3000)
+            }
+          }
 
           // Воспроизводим звуки и анимации
           const { type, data } = gameState.lastAction
@@ -274,7 +290,7 @@ export default function GameSession({
     } catch (error) {
       console.error("Error syncing game state:", error)
     }
-  }, [isMultiplayer, lobbyId, lastActionTimestamp, play])
+  }, [isMultiplayer, lobbyId, lastActionTimestamp, play, notifications])
 
   // Инициализация игры для мультиплеера (только один раз)
   useEffect(() => {
@@ -320,6 +336,7 @@ export default function GameSession({
       setActiveCells([])
       setShotCells(new Set())
       setRevealedEmptyByBinoculars(new Set())
+      setBinocularsUsedCells(new Set())
       setBeaverCell(null)
       setWardenCell(null)
       setDuckCell(null)
@@ -530,6 +547,7 @@ export default function GameSession({
 
     setShotCells(new Set())
     setRevealedEmptyByBinoculars(new Set())
+    setBinocularsUsedCells(new Set())
     setAmmo(level.ammo + (inv.hunter.extraAmmo || 0))
     setOutcome(null)
     setBinocularUsedThisTurn(false)
@@ -653,6 +671,7 @@ export default function GameSession({
     activeCells.forEach((i) => (map[i] = {}))
     shotCells.forEach((i) => (map[i] = { ...(map[i] || {}), shot: true }))
     revealedEmptyByBinoculars.forEach((i) => (map[i] = { ...(map[i] || {}), revealedEmpty: true }))
+    binocularsUsedCells.forEach((i) => (map[i] = { ...(map[i] || {}), binocularsUsed: true }))
     compassHint.forEach((i) => (map[i] = { ...(map[i] || {}), compassHint: true }))
     if (turn === "ended" && beaverCell !== null) map[beaverCell] = { ...(map[beaverCell] || {}), beaver: true }
     if (turn === "ended" && wardenCell !== null) map[wardenCell] = { ...(map[wardenCell] || {}), warden: true }
@@ -671,6 +690,7 @@ export default function GameSession({
     shotCells,
     turn,
     revealedEmptyByBinoculars,
+    binocularsUsedCells,
     wardenCell,
   ])
 
@@ -874,39 +894,65 @@ export default function GameSession({
     setBinocularUsedThisTurn(false)
   }
 
-  async function handleBinoculars() {
-    if (turn !== "hunter" || !inv.hunter.binoculars || binocularUsedThisTurn) return
-    if (playerCharacter !== "hunter") return
+  // исправлена ошибка с хуками - убраны условные вызовы state setters
+  const handleBinoculars = useCallback(async () => {
+    if (turn !== "hunter" || binocularUsedThisTurn || !inv.hunter.binoculars) return
 
     // В мультиплеере используем серверные действия
     if (isMultiplayer && lobbyId && playerId) {
       setIsLoading(true)
       await useBinoculars(lobbyId, playerId)
-      await syncAfterAction() // Синхронизируемся после действия
+      await syncAfterAction()
       setIsLoading(false)
       return
     }
 
-    const empties = activeCells.filter(
-      (c) =>
-        c !== duckCell &&
-        c !== beaverCell &&
-        c !== wardenCell &&
-        !shotCells.has(c) &&
-        !revealedEmptyByBinoculars.has(c),
+    // Для одиночной игры - локальная логика
+    const availableCells = activeCells.filter(
+      (c) => !shotCells.has(c) && !revealedEmptyByBinoculars.has(c) && !binocularsUsedCells.has(c),
     )
-    if (empties.length === 0) {
-      setBinocularUsedThisTurn(true)
-      return
+
+    let targetCell = null
+    if (availableCells.length > 0) {
+      targetCell = sample(availableCells)
+
+      // Отмечаем клетку как использованную биноклем
+      setBinocularsUsedCells((prev) => new Set([...prev, targetCell]))
+
+      // Проверяем что в клетке
+      const empties = activeCells.filter(
+        (c) =>
+          c !== duckCell &&
+          c !== beaverCell &&
+          c !== wardenCell &&
+          !shotCells.has(c) &&
+          !revealedEmptyByBinoculars.has(c),
+      )
+
+      if (empties.includes(targetCell)) {
+        setRevealedEmptyByBinoculars((prev) => new Set([...prev, targetCell]))
+      }
     }
-    const revealCount = inv.hunter.binocularsPlus ? 2 : 1
-    const reveal = getRandomIndices(Math.min(revealCount, empties.length), empties)
-    const next = new Set(revealedEmptyByBinoculars)
-    reveal.forEach((r) => next.add(r))
-    setRevealedEmptyByBinoculars(next)
+
     setBinocularUsedThisTurn(true)
     play("ui")
-  }
+  }, [
+    turn,
+    binocularUsedThisTurn,
+    inv.hunter.binoculars,
+    isMultiplayer,
+    lobbyId,
+    playerId,
+    syncAfterAction,
+    activeCells,
+    shotCells,
+    revealedEmptyByBinoculars,
+    binocularsUsedCells,
+    duckCell,
+    beaverCell,
+    wardenCell,
+    play,
+  ])
 
   async function handleHunterShoot(cell: number, isAI = false) {
     const canShoot = turn === "hunter" && activeCells.includes(cell) && !shotCells.has(cell)
@@ -1040,6 +1086,9 @@ export default function GameSession({
     const canUseShotCell = inv.duck.ghostFlight
     if (shotCells.has(cell) && !canUseShotCell) return
 
+    // утка не может лететь туда где использовался бинокль
+    if (binocularsUsedCells.has(cell)) return
+
     if (level.hasWarden && wardenCell === cell) {
       setDuckCell(cell)
       endRound({ winner: "hunter", reason: "duck-hit-warden" })
@@ -1141,6 +1190,8 @@ export default function GameSession({
       }
 
       if (turn === "duck" && isFlightMode) {
+        // утка не может лететь туда где использовался бинокль
+        if (binocularsUsedCells.has(i)) return false
         return inv.duck.ghostFlight ? true : !shotCells.has(i)
       }
 
@@ -1150,6 +1201,7 @@ export default function GameSession({
       activeCells,
       isFlightMode,
       shotCells,
+      binocularsUsedCells,
       turn,
       playerCharacter,
       inv.duck.ghostFlight,
@@ -1230,6 +1282,15 @@ export default function GameSession({
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
+      {notifications.length > 0 && (
+        <div className="bg-blue-100 border border-blue-300 rounded-lg p-3 mb-4">
+          {notifications.map((notification, index) => (
+            <div key={index} className="text-blue-800 text-sm">
+              {notification}
+            </div>
+          ))}
+        </div>
+      )}
       <div className="mx-auto max-w-5xl">
         <div className="mb-4 flex items-center justify-between">
           <Button variant="outline" onClick={onBackToMenu}>

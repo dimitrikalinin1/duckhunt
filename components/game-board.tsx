@@ -13,6 +13,7 @@ export type CellOverlay = {
   trap?: boolean
   compassHint?: boolean
   eagleEyeDuck?: boolean // L4 Орлиный глаз — подсветка утки в начале
+  binocularsUsed?: boolean // добавлен тип для клеток где использовался бинокль
 }
 
 type Props = {
@@ -55,6 +56,7 @@ export default function GameBoard({ rows, cols, activeCells, overlays, lastShotA
                 : "cursor-not-allowed",
               o.shot && "bg-neutral-200/80 dark:bg-neutral-800/70 line-through",
               o.compassHint && "ring-2 ring-amber-400/70",
+              o.binocularsUsed && "ring-2 ring-yellow-400/70 bg-yellow-50/30 dark:bg-yellow-900/20",
             )}
             aria-disabled={!canClick(i)}
           >
@@ -68,6 +70,12 @@ export default function GameBoard({ rows, cols, activeCells, overlays, lastShotA
             {o.revealedEmpty && !o.shot && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="px-2 py-1 rounded bg-emerald-200 text-emerald-900 text-xs">{"ПУСТО"}</div>
+              </div>
+            )}
+
+            {o.binocularsUsed && (
+              <div className="absolute top-1 right-1">
+                <div className="text-lg">👁</div>
               </div>
             )}
 

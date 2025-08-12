@@ -250,6 +250,7 @@ export async function makeDuckMove(lobbyId: string, playerId: string, action: "s
   let newDuckCell = currentState.duckCell
   let outcome = null
   let newDuckSnaredTurns = Math.max(0, (currentState.duckSnaredTurns || 0) - 1)
+  const newNotifications = [...(currentState.notifications || [])]
 
   if (action === "flight" && targetCell !== undefined) {
     // Проверяем валидность клетки для перелета
@@ -257,10 +258,18 @@ export async function makeDuckMove(lobbyId: string, playerId: string, action: "s
       return { success: false, error: "Invalid cell" }
     }
 
-    // Проверяем можем ли лететь на обстрелянную клетку
+    // Утка не может лететь в стрелянную клетку (кроме призрачного полета)
     if (currentState.shotCells.includes(targetCell) && !currentState.inventory.duck.ghostFlight) {
-      return { success: false, error: "Cannot fly to shot cell without ghost flight" }
+      return { success: false, error: "Утка не может лететь в обстрелянную клетку" }
     }
+
+    // Утка не может лететь туда, где был бинокль
+    if ((currentState.binocularsUsedCells || []).includes(targetCell)) {
+      return { success: false, error: "Утка не может лететь туда, где использовался бинокль" }
+    }
+
+    // Добавляем уведомление для охотника о перелете утки
+    newNotifications.push("🦆 Утка перелетела!")
 
     // Проверяем попадание на NPC
     if (currentState.wardenCell === targetCell) {
@@ -283,6 +292,7 @@ export async function makeDuckMove(lobbyId: string, playerId: string, action: "s
   const updatedState = updateGameState(lobbyId, {
     duckCell: newDuckCell,
     duckSnaredTurns: newDuckSnaredTurns,
+    notifications: newNotifications,
     turn: outcome ? "ended" : "hunter",
     outcome,
     binocularUsedThisTurn: false,
@@ -317,30 +327,50 @@ export async function useBinoculars(lobbyId: string, playerId: string) {
       !(currentState.revealedEmptyByBinoculars || []).includes(c),
   )
 
-  if (empties.length === 0) {
+  // Выбираем случайную клетку для подсветки биноклем
+  const targetCell = sample(
+    currentState.activeCells.filter(
+      (c) => !currentState.shotCells.includes(c) && !(currentState.binocularsUsedCells || []).includes(c),
+    ),
+  )
+
+  if (!targetCell) {
     const updatedState = updateGameState(lobbyId, {
       binocularUsedThisTurn: true,
       lastAction: {
         type: "use-binoculars",
         playerId,
-        data: { revealed: [] },
+        data: { revealed: [], targetCell: null },
         timestamp: Date.now(),
       },
     })
     return { success: true, state: updatedState }
   }
 
-  const revealCount = currentState.inventory.hunter.binocularsPlus ? 2 : 1
-  const reveal = getRandomIndices(Math.min(revealCount, empties.length), empties)
-  const newRevealed = [...(currentState.revealedEmptyByBinoculars || []), ...reveal]
+  // Отмечаем клетку как использованную биноклем
+  const newBinocularsUsedCells = [...(currentState.binocularsUsedCells || []), targetCell]
+  const newNotifications = [...(currentState.notifications || [])]
+
+  // Проверяем что в клетке
+  let revealed = []
+  if (empties.includes(targetCell)) {
+    revealed = [targetCell]
+    newNotifications.push(`🔍 Бинокль показал пустую клетку`)
+  } else {
+    newNotifications.push(`🔍 Бинокль использован`)
+  }
+
+  const newRevealed = [...(currentState.revealedEmptyByBinoculars || []), ...revealed]
 
   const updatedState = updateGameState(lobbyId, {
     revealedEmptyByBinoculars: newRevealed,
+    binocularsUsedCells: newBinocularsUsedCells,
+    notifications: newNotifications,
     binocularUsedThisTurn: true,
     lastAction: {
       type: "use-binoculars",
       playerId,
-      data: { revealed: reveal },
+      data: { revealed, targetCell },
       timestamp: Date.now(),
     },
   })

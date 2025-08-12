@@ -4,6 +4,7 @@ export type GameState = {
   activeCells: number[]
   shotCells: number[]
   revealedEmptyByBinoculars?: number[]
+  binocularsUsedCells?: number[]
   beaverCell: number | null
   wardenCell: number | null
   duckCell: number | null
@@ -21,6 +22,7 @@ export type GameState = {
   binocularUsedThisTurn?: boolean
   compassHint?: number[]
   duckSnaredTurns?: number
+  notifications?: string[]
   lastAction?: {
     type: string
     playerId: string
@@ -50,6 +52,8 @@ export function createInitialGameState(lobbyId: string): GameState {
     activeCells: [],
     shotCells: [],
     revealedEmptyByBinoculars: [],
+    binocularsUsedCells: [],
+    notifications: [],
     beaverCell: null,
     wardenCell: null,
     duckCell: null,
@@ -80,7 +84,7 @@ export function createInitialGameState(lobbyId: string): GameState {
         eagleEyeUsed: false,
       },
       duck: {
-        flight: false,
+        flight: true,
         safeFlight: false,
         armoredFeatherRank: 0,
         autoFlight: false,
