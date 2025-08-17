@@ -10,9 +10,10 @@ type Props = {
   playerName: string
   onJoinLobby: (lobbyId: string) => void
   onBackToMenu?: () => void
+  preferredRole?: string
 }
 
-export default function LobbyBrowser({ playerId, playerName, onJoinLobby, onBackToMenu }: Props) {
+export default function LobbyBrowser({ playerId, playerName, onJoinLobby, onBackToMenu, preferredRole }: Props) {
   const [lobbies, setLobbies] = useState<Lobby[]>([])
   const [loading, setLoading] = useState(false)
   const [customLobbyId, setCustomLobbyId] = useState("")
@@ -59,91 +60,93 @@ export default function LobbyBrowser({ playerId, playerName, onJoinLobby, onBack
   return (
     <div className="space-y-6 animate-slide-in">
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent mb-4">
-          🎯 Найти игру
-        </h1>
-        <p className="text-slate-300">Создайте игру или присоединитесь к существующей</p>
+        <h1 className="text-3xl font-bold text-white mb-2">🎯 Поиск игры</h1>
+        <p className="text-slate-400">Создайте игру или присоединитесь к существующей</p>
+        {preferredRole && (
+          <div className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-slate-800/50 rounded-xl border border-slate-700">
+            <span className="text-2xl">{preferredRole === "hunter" ? "🏹" : "🦆"}</span>
+            <span className="text-white font-medium">{preferredRole === "hunter" ? "Охотник" : "Утка"}</span>
+          </div>
+        )}
       </div>
 
-      <div className="grid gap-4">
-        <div className="game-card group">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
-              <Plus className="h-6 w-6 text-white" />
+      <div className="grid gap-6">
+        <div className="game-card group border-green-500/30 bg-gradient-to-br from-green-900/20 to-emerald-900/20">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center animate-pulse-glow">
+              <Plus className="h-8 w-8 text-white" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-white">Создать новую игру</h3>
-              <p className="text-slate-400 text-sm">Станьте хостом игры</p>
+              <h3 className="text-2xl font-bold text-white">Создать новую игру</h3>
+              <p className="text-slate-300">Станьте хостом и пригласите друга</p>
             </div>
           </div>
-          <button onClick={handleCreateLobby} disabled={loading} className="game-button-primary w-full">
+          <button
+            onClick={handleCreateLobby}
+            disabled={loading}
+            className="w-full py-4 text-xl font-bold bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:scale-105 transition-all duration-300 shadow-lg shadow-green-500/25 disabled:opacity-50 disabled:hover:scale-100"
+          >
             {loading ? (
               <div className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                Создание...
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                Создание лобби...
               </div>
             ) : (
-              "🚀 Создать лобби"
+              "🚀 Создать игру"
             )}
           </button>
         </div>
 
-        <div className="game-card">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center">
-              <Users className="h-6 w-6 text-white" />
+        <div className="game-card group border-blue-500/30 bg-gradient-to-br from-blue-900/20 to-cyan-900/20">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center animate-pulse-glow">
+              <Users className="h-8 w-8 text-white" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-white">Присоединиться по коду</h3>
-              <p className="text-slate-400 text-sm">Введите код лобби</p>
+              <h3 className="text-2xl font-bold text-white">Присоединиться к игре</h3>
+              <p className="text-slate-300">Введите код лобби от друга</p>
             </div>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
             <input
               type="text"
-              placeholder="Введите код лобби"
+              placeholder="Введите код лобби (например: ABC123)"
               value={customLobbyId}
               onChange={(e) => setCustomLobbyId(e.target.value.toUpperCase())}
               maxLength={6}
-              className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all"
+              className="w-full px-4 py-4 text-lg bg-slate-800/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all"
             />
             <button
               onClick={handleJoinCustomLobby}
               disabled={loading || !customLobbyId.trim()}
-              className="game-button-secondary w-full"
+              className="w-full py-4 text-xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl hover:scale-105 transition-all duration-300 shadow-lg shadow-blue-500/25 disabled:opacity-50 disabled:hover:scale-100"
             >
-              🎮 Присоединиться
+              🎮 Присоединиться к игре
             </button>
           </div>
         </div>
       </div>
 
-      <div className="game-card">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
-              <Users className="h-6 w-6 text-white" />
+      {lobbies.length > 0 && (
+        <div className="game-card">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
+                <Users className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white">Открытые игры</h3>
+                <p className="text-slate-400">{lobbies.length} доступных лобби</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-xl font-bold text-white">Доступные игры</h3>
-              <p className="text-slate-400 text-sm">{lobbies.length} активных лобби</p>
-            </div>
+            <button
+              onClick={loadLobbies}
+              className="w-10 h-10 rounded-lg bg-slate-800/50 border border-slate-700 flex items-center justify-center hover:bg-slate-700/50 transition-colors"
+            >
+              <RefreshCw className="h-4 w-4 text-slate-300" />
+            </button>
           </div>
-          <button
-            onClick={loadLobbies}
-            className="w-10 h-10 rounded-lg bg-slate-800/50 border border-slate-700 flex items-center justify-center hover:bg-slate-700/50 transition-colors"
-          >
-            <RefreshCw className="h-4 w-4 text-slate-300" />
-          </button>
-        </div>
 
-        {lobbies.length === 0 ? (
-          <div className="text-center py-8">
-            <div className="text-6xl mb-4">🎯</div>
-            <div className="text-slate-400">Нет доступных игр</div>
-            <div className="text-slate-500 text-sm mt-1">Создайте новую игру!</div>
-          </div>
-        ) : (
           <div className="space-y-3">
             {lobbies.map((lobby) => (
               <div
@@ -156,22 +159,20 @@ export default function LobbyBrowser({ playerId, playerName, onJoinLobby, onBack
                     <span className="px-2 py-1 bg-slate-700 rounded-lg text-xs text-slate-300">
                       {lobby.players.length}/{lobby.maxPlayers} игроков
                     </span>
-                    <span className="px-2 py-1 bg-slate-700 rounded-lg text-xs text-slate-300">
-                      {new Date(lobby.createdAt).toLocaleTimeString()}
-                    </span>
-                  </div>
-                  <div className="text-sm text-slate-400 max-w-32 truncate">
-                    {lobby.players.map((p) => p.name).join(", ")}
                   </div>
                 </div>
-                <button onClick={() => handleJoinLobby(lobby.id)} disabled={loading} className="game-button-secondary">
+                <button
+                  onClick={() => handleJoinLobby(lobby.id)}
+                  disabled={loading}
+                  className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100"
+                >
                   Войти
                 </button>
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
