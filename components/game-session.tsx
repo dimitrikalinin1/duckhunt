@@ -59,7 +59,7 @@ export default function GameSession({
         let result
 
         if (gameState.turn === "duck-initial" && playerCharacter === "duck") {
-          result = await makeDuckInitialMove(lobbyId, playerId)
+          result = await makeDuckInitialMove(lobbyId, playerId, cellIndex)
         } else if (gameState.turn === "hunter" && playerCharacter === "hunter") {
           if (gameState.shotCells?.includes(cellIndex)) {
             console.warn("Cell already shot", cellIndex)

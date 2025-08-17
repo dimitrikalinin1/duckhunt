@@ -72,7 +72,7 @@ export async function getGameStateAction(lobbyId: string) {
 }
 
 // Безопасный первый ход утки
-export async function makeDuckInitialMove(lobbyId: string, playerId: string) {
+export async function makeDuckInitialMove(lobbyId: string, playerId: string, cellIndex?: number) {
   const currentState = getGameState(lobbyId)
   if (!currentState || currentState.turn !== "duck-initial") {
     return { success: false, error: "Invalid game state" }
@@ -84,8 +84,13 @@ export async function makeDuckInitialMove(lobbyId: string, playerId: string) {
     return { success: false, error: "No cells available" }
   }
 
-  // Выбираем случайную клетку (может быть бобр)
-  const duckCell = sample(availableCells)
+  let duckCell: number
+  if (cellIndex !== undefined && availableCells.includes(cellIndex)) {
+    duckCell = cellIndex
+  } else {
+    // Выбираем случайную клетку (может быть бобр)
+    duckCell = sample(availableCells)
+  }
 
   let outcome = null
   if (duckCell === currentState.beaverCell) {
