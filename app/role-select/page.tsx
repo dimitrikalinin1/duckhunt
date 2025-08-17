@@ -3,10 +3,14 @@
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
 import { ArrowLeft, Target, Feather } from "lucide-react"
+import { usePlayer } from "@/contexts/player-context"
 
 export default function RoleSelectPage() {
   const router = useRouter()
+  const { player, loading } = usePlayer()
 
   const handleRoleSelect = (role: "hunter" | "duck") => {
     router.push(`/character/${role}`)
@@ -15,6 +19,40 @@ export default function RoleSelectPage() {
   const handleBack = () => {
     router.push("/")
   }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Загрузка...</p>
+        </div>
+      </div>
+    )
+  }
+
+  const roles = [
+    {
+      id: "hunter",
+      name: "Охотник",
+      icon: Target,
+      color: "orange",
+      level: player?.hunter_level || 1,
+      experience: player?.hunter_experience || 0,
+      description: "Выследи и поймай утку",
+      abilities: ["Стрельба по клеткам", "Использование бинокля", "Ограниченные патроны"],
+    },
+    {
+      id: "duck",
+      name: "Утка",
+      icon: Feather,
+      color: "blue",
+      level: player?.duck_level || 1,
+      experience: player?.duck_experience || 0,
+      description: "Скрывайся и выживай",
+      abilities: ["Перемещение по полю", "Скрытность", "Защитные перки"],
+    },
+  ]
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -36,70 +74,68 @@ export default function RoleSelectPage() {
             <p className="text-muted-foreground">Каждая роль имеет уникальные способности и стратегии</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Hunter Card */}
-            <Card
-              className="minimal-card hover:shadow-lg transition-all duration-300 cursor-pointer group"
-              onClick={() => handleRoleSelect("hunter")}
-            >
-              <CardHeader className="text-center pb-4">
-                <div className="mx-auto mb-4 p-8 rounded-full bg-orange-100 group-hover:bg-orange-200 transition-colors">
-                  <Target className="h-12 w-12 text-orange-600" />
-                </div>
-                <CardTitle className="text-2xl font-bold text-orange-600">Охотник</CardTitle>
-                <p className="text-muted-foreground">Выследи и поймай утку</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-sm">Способности:</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>• Стрельба по клеткам</li>
-                    <li>• Использование бинокля</li>
-                    <li>• Ограниченные патроны</li>
-                  </ul>
-                </div>
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-sm">Цель:</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Найти и подстрелить утку за ограниченное количество ходов
-                  </p>
-                </div>
-                <Button className="w-full minimal-button" onClick={() => handleRoleSelect("hunter")}>
-                  Выбрать охотника
-                </Button>
-              </CardContent>
-            </Card>
+          <div className="overflow-x-auto pb-4">
+            <div className="flex gap-6 min-w-max px-4">
+              {roles.map((role) => {
+                const Icon = role.icon
+                const progressPercent = role.experience % 100
 
-            {/* Duck Card */}
-            <Card
-              className="minimal-card hover:shadow-lg transition-all duration-300 cursor-pointer group"
-              onClick={() => handleRoleSelect("duck")}
-            >
-              <CardHeader className="text-center pb-4">
-                <div className="mx-auto mb-4 p-8 rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors">
-                  <Feather className="h-12 w-12 text-blue-600" />
-                </div>
-                <CardTitle className="text-2xl font-bold text-blue-600">Утка</CardTitle>
-                <p className="text-muted-foreground">Скрывайся и выживай</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-sm">Способности:</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>• Перемещение по полю</li>
-                    <li>• Скрытность</li>
-                    <li>• Защитные перки</li>
-                  </ul>
-                </div>
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-sm">Цель:</h4>
-                  <p className="text-sm text-muted-foreground">Избежать попадания охотника и выжить до конца игры</p>
-                </div>
-                <Button className="w-full minimal-button" onClick={() => handleRoleSelect("duck")}>
-                  Выбрать утку
-                </Button>
-              </CardContent>
-            </Card>
+                return (
+                  <Card
+                    key={role.id}
+                    className="minimal-card hover:shadow-lg transition-all duration-300 cursor-pointer group w-80 flex-shrink-0"
+                    onClick={() => handleRoleSelect(role.id as "hunter" | "duck")}
+                  >
+                    <CardHeader className="text-center pb-4">
+                      <div
+                        className={`mx-auto mb-4 p-6 rounded-full ${role.color === "orange" ? "bg-orange-100 group-hover:bg-orange-200" : "bg-blue-100 group-hover:bg-blue-200"} transition-colors`}
+                      >
+                        <Icon
+                          className={`h-10 w-10 ${role.color === "orange" ? "text-orange-600" : "text-blue-600"}`}
+                        />
+                      </div>
+                      <CardTitle
+                        className={`text-2xl font-bold ${role.color === "orange" ? "text-orange-600" : "text-blue-600"}`}
+                      >
+                        {role.name}
+                      </CardTitle>
+                      <p className="text-muted-foreground">{role.description}</p>
+                      <Badge variant="secondary" className="mx-auto">
+                        Уровень {role.level}
+                      </Badge>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Опыт</span>
+                          <span>{role.experience % 100}/100</span>
+                        </div>
+                        <Progress value={progressPercent} className="h-2" />
+                      </div>
+
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-sm">Способности:</h4>
+                        <ul className="text-sm text-muted-foreground space-y-1">
+                          {role.abilities.map((ability, index) => (
+                            <li key={index}>• {ability}</li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <Button
+                        className="w-full minimal-button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRoleSelect(role.id as "hunter" | "duck")
+                        }}
+                      >
+                        Играть
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
           </div>
 
           {/* Game Rules */}

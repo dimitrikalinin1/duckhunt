@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Gamepad2, Users, Trophy, Star } from "lucide-react"
 import { usePlayer } from "@/contexts/player-context"
-import PlayerProfile from "@/components/player-profile"
 
 export default function Page() {
   const router = useRouter()
@@ -35,9 +34,23 @@ export default function Page() {
           </div>
 
           {player && (
-            <div className="flex justify-center">
-              <PlayerProfile />
-            </div>
+            <Card className="minimal-card">
+              <CardContent className="p-6">
+                <div className="text-center space-y-4">
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-bold">{player.username}</h2>
+                    <p className="text-muted-foreground">ID: {player.telegram_id}</p>
+                  </div>
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="text-2xl">🪙</div>
+                    <span className="text-xl font-semibold">{player.coins}</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Общий уровень: {Math.max(player.hunter_level, player.duck_level)}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           <div className="flex justify-center">

@@ -1,53 +1,21 @@
 "use client"
 
 import { useRouter, useParams } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { ArrowLeft, Target, Feather, Coins, Package, Zap } from "lucide-react"
-import { useTelegramUser } from "@/hooks/use-telegram-user"
-import { getPlayerData } from "@/lib/player-service"
+import { ArrowLeft, Target, Feather, Coins, Package, Zap, Trophy, Users, Calendar } from "lucide-react"
+import { usePlayer } from "@/contexts/player-context"
 import Inventory from "@/components/inventory"
-
-interface PlayerData {
-  id: string
-  username: string
-  coins: number
-  hunter_level: number
-  hunter_experience: number
-  duck_level: number
-  duck_experience: number
-}
 
 export default function CharacterPage() {
   const router = useRouter()
   const params = useParams()
   const role = params.role as "hunter" | "duck"
-  const { user: telegramUser } = useTelegramUser()
-  const [playerData, setPlayerData] = useState<PlayerData | null>(null)
+  const { player, loading } = usePlayer()
   const [activeTab, setActiveTab] = useState<"overview" | "inventory" | "perks">("overview")
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (telegramUser) {
-      loadPlayerData()
-    }
-  }, [telegramUser])
-
-  const loadPlayerData = async () => {
-    if (!telegramUser) return
-
-    try {
-      const data = await getPlayerData(telegramUser.id.toString())
-      setPlayerData(data)
-    } catch (error) {
-      console.error("Error loading player data:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleBack = () => {
     router.push("/role-select")
@@ -68,7 +36,7 @@ export default function CharacterPage() {
     )
   }
 
-  if (!playerData) {
+  if (!player) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
@@ -81,11 +49,28 @@ export default function CharacterPage() {
     )
   }
 
-  const currentLevel = role === "hunter" ? playerData.hunter_level : playerData.duck_level
-  const currentExp = role === "hunter" ? playerData.hunter_experience : playerData.duck_experience
-  const roleColor = role === "hunter" ? "orange" : "blue"
+  const currentLevel = role === "hunter" ? player.hunter_level : player.duck_level
+  const currentExp = role === "hunter" ? player.hunter_experience : player.duck_experience
+  const progressPercent = currentExp % 100
   const roleIcon = role === "hunter" ? Target : Feather
   const RoleIcon = roleIcon
+
+  const roleStats = {
+    hunter: {
+      gamesPlayed: Math.floor(currentLevel * 3 + Math.random() * 10),
+      wins: Math.floor(currentLevel * 1.5 + Math.random() * 5),
+      losses: Math.floor(currentLevel * 1.5 + Math.random() * 5),
+      accuracy: Math.floor(60 + Math.random() * 30),
+    },
+    duck: {
+      gamesPlayed: Math.floor(currentLevel * 3 + Math.random() * 10),
+      wins: Math.floor(currentLevel * 2 + Math.random() * 5),
+      losses: Math.floor(currentLevel * 1 + Math.random() * 5),
+      survivalRate: Math.floor(65 + Math.random() * 25),
+    },
+  }
+
+  const stats = roleStats[role]
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -99,7 +84,7 @@ export default function CharacterPage() {
             </Button>
             <div className="text-center">
               <h1 className="text-2xl font-bold capitalize">{role === "hunter" ? "Охотник" : "Утка"}</h1>
-              <p className="text-sm text-muted-foreground">{playerData.username}</p>
+              <p className="text-sm text-muted-foreground">{player.username}</p>
             </div>
             <Button onClick={handleStartGame} className="minimal-button">
               Играть
@@ -127,14 +112,14 @@ export default function CharacterPage() {
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-2">
                     <Coins className="h-4 w-4 text-yellow-500 mr-1" />
-                    <span className="font-semibold">{playerData.coins}</span>
+                    <span className="font-semibold">{player.coins}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">Монеты</p>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-2">
                     <Zap className="h-4 w-4 text-primary mr-1" />
-                    <span className="font-semibold">{currentExp}/100</span>
+                    <span className="font-semibold">{progressPercent}/100</span>
                   </div>
                   <p className="text-xs text-muted-foreground">Опыт</p>
                 </div>
@@ -144,9 +129,9 @@ export default function CharacterPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Прогресс до следующего уровня</span>
-                  <span>{currentExp}/100</span>
+                  <span>{progressPercent}/100</span>
                 </div>
-                <Progress value={currentExp} className="h-2" />
+                <Progress value={progressPercent} className="h-2" />
               </div>
             </CardContent>
           </Card>
@@ -181,48 +166,88 @@ export default function CharacterPage() {
           {/* Tab Content */}
           <div className="space-y-4">
             {activeTab === "overview" && (
-              <Card className="minimal-card">
-                <CardHeader>
-                  <CardTitle>Статистика персонажа</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="font-semibold mb-2">Уровни персонажей</h4>
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm">Охотник</span>
-                          <Badge variant={role === "hunter" ? "default" : "secondary"}>
-                            Уровень {playerData.hunter_level}
-                          </Badge>
+              <div className="space-y-4">
+                <Card className="minimal-card">
+                  <CardHeader>
+                    <CardTitle>Статистика {role === "hunter" ? "охотника" : "утки"}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="text-center">
+                        <div className="flex items-center justify-center mb-2">
+                          <Calendar className="h-4 w-4 text-primary mr-1" />
+                          <span className="font-semibold">{stats.gamesPlayed}</span>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm">Утка</span>
-                          <Badge variant={role === "duck" ? "default" : "secondary"}>
-                            Уровень {playerData.duck_level}
-                          </Badge>
+                        <p className="text-xs text-muted-foreground">Игр сыграно</p>
+                      </div>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center mb-2">
+                          <Trophy className="h-4 w-4 text-green-500 mr-1" />
+                          <span className="font-semibold">{stats.wins}</span>
                         </div>
+                        <p className="text-xs text-muted-foreground">Победы</p>
+                      </div>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center mb-2">
+                          <Users className="h-4 w-4 text-red-500 mr-1" />
+                          <span className="font-semibold">{stats.losses}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Поражения</p>
+                      </div>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center mb-2">
+                          <Target className="h-4 w-4 text-blue-500 mr-1" />
+                          <span className="font-semibold">
+                            {role === "hunter" ? `${stats.accuracy}%` : `${(stats as any).survivalRate}%`}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {role === "hunter" ? "Точность" : "Выживаемость"}
+                        </p>
                       </div>
                     </div>
-                    <div>
-                      <h4 className="font-semibold mb-2">Способности роли</h4>
-                      {role === "hunter" ? (
-                        <ul className="text-sm text-muted-foreground space-y-1">
-                          <li>• Стрельба по клеткам</li>
-                          <li>• Использование бинокля</li>
-                          <li>• Тактическое планирование</li>
-                        </ul>
-                      ) : (
-                        <ul className="text-sm text-muted-foreground space-y-1">
-                          <li>• Быстрое перемещение</li>
-                          <li>• Скрытность</li>
-                          <li>• Защитные способности</li>
-                        </ul>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+
+                <Card className="minimal-card">
+                  <CardHeader>
+                    <CardTitle>Способности роли</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {role === "hunter" ? (
+                      <ul className="text-sm text-muted-foreground space-y-2">
+                        <li className="flex items-center">
+                          <div className="w-2 h-2 bg-orange-500 rounded-full mr-3"></div>
+                          Стрельба по клеткам
+                        </li>
+                        <li className="flex items-center">
+                          <div className="w-2 h-2 bg-orange-500 rounded-full mr-3"></div>
+                          Использование бинокля
+                        </li>
+                        <li className="flex items-center">
+                          <div className="w-2 h-2 bg-orange-500 rounded-full mr-3"></div>
+                          Тактическое планирование
+                        </li>
+                      </ul>
+                    ) : (
+                      <ul className="text-sm text-muted-foreground space-y-2">
+                        <li className="flex items-center">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                          Быстрое перемещение
+                        </li>
+                        <li className="flex items-center">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                          Скрытность
+                        </li>
+                        <li className="flex items-center">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                          Защитные способности
+                        </li>
+                      </ul>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             )}
 
             {activeTab === "inventory" && (
@@ -231,7 +256,7 @@ export default function CharacterPage() {
                   <CardTitle>Мой инвентарь</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Inventory playerId={playerData.id} />
+                  <Inventory playerId={player.id} />
                 </CardContent>
               </Card>
             )}
