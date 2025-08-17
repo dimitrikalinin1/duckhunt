@@ -6,10 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { ArrowLeft, Target, Feather, Coins, Package, Zap, ShoppingCart } from "lucide-react"
+import { ArrowLeft, Target, Feather, Coins, Package, Zap } from "lucide-react"
 import { useTelegramUser } from "@/hooks/use-telegram-user"
 import { getPlayerData } from "@/lib/player-service"
-import Shop from "@/components/shop"
 import Inventory from "@/components/inventory"
 
 interface PlayerData {
@@ -28,7 +27,7 @@ export default function CharacterPage() {
   const role = params.role as "hunter" | "duck"
   const { user: telegramUser } = useTelegramUser()
   const [playerData, setPlayerData] = useState<PlayerData | null>(null)
-  const [activeTab, setActiveTab] = useState<"overview" | "inventory" | "shop" | "perks">("overview")
+  const [activeTab, setActiveTab] = useState<"overview" | "inventory" | "perks">("overview")
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -170,14 +169,6 @@ export default function CharacterPage() {
               Инвентарь
             </Button>
             <Button
-              variant={activeTab === "shop" ? "default" : "outline"}
-              onClick={() => setActiveTab("shop")}
-              className="minimal-button-secondary whitespace-nowrap"
-            >
-              <ShoppingCart className="h-4 w-4 mr-1" />
-              Магазин
-            </Button>
-            <Button
               variant={activeTab === "perks" ? "default" : "outline"}
               onClick={() => setActiveTab("perks")}
               className="minimal-button-secondary whitespace-nowrap"
@@ -241,17 +232,6 @@ export default function CharacterPage() {
                 </CardHeader>
                 <CardContent>
                   <Inventory playerId={playerData.id} />
-                </CardContent>
-              </Card>
-            )}
-
-            {activeTab === "shop" && (
-              <Card className="minimal-card">
-                <CardHeader>
-                  <CardTitle>Магазин улучшений</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Shop />
                 </CardContent>
               </Card>
             )}

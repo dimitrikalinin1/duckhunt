@@ -34,8 +34,8 @@ export default function GameBoard({ rows, cols, activeCells, overlays, lastShotA
     <div
       role="grid"
       aria-label="Игровое поле"
-      className="grid gap-3 p-4"
-      style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+      className="grid gap-1 p-2 max-w-sm mx-auto"
+      style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
     >
       {indices.map((i) => {
         const isActive = activeCells.includes(i)
@@ -49,16 +49,16 @@ export default function GameBoard({ rows, cols, activeCells, overlays, lastShotA
             role="gridcell"
             onClick={() => onCellClick(i)}
             className={cn(
-              "relative aspect-square rounded-2xl border-2 text-sm transition-all duration-300 transform-gpu overflow-hidden group",
+              "relative aspect-square rounded-lg border-2 text-sm transition-colors duration-200 overflow-hidden touch-manipulation",
               "bg-gradient-to-br from-slate-700 to-slate-800 border-slate-600",
               isActive && "from-emerald-800/50 to-green-800/50 border-emerald-500/50 shadow-lg shadow-emerald-500/20",
               canClick(i) &&
-                "hover:scale-110 hover:shadow-xl hover:shadow-cyan-500/30 hover:border-cyan-400 hover:from-cyan-800/30 hover:to-blue-800/30 cursor-pointer",
+                "hover:border-cyan-400 hover:from-cyan-800/30 hover:to-blue-800/30 cursor-pointer active:scale-95",
               !canClick(i) && "cursor-not-allowed opacity-60",
               o.shot && "from-red-900/30 to-red-800/30 border-red-500/50 shadow-lg shadow-red-500/20",
-              o.compassHint && "ring-4 ring-amber-400/70 animate-pulse-glow",
+              o.compassHint && "ring-2 ring-amber-400/70 animate-pulse",
               o.binocularsUsed &&
-                "ring-4 ring-yellow-400/80 from-yellow-900/30 to-yellow-800/30 border-yellow-500/50 shadow-lg shadow-yellow-500/30 animate-pulse-glow",
+                "ring-2 ring-yellow-400/80 from-yellow-900/30 to-yellow-800/30 border-yellow-500/50 shadow-lg shadow-yellow-500/30 animate-pulse",
             )}
             aria-disabled={!canClick(i)}
           >
@@ -130,7 +130,7 @@ export default function GameBoard({ rows, cols, activeCells, overlays, lastShotA
             <div className="absolute top-1 left-1 text-xs text-slate-400 font-mono opacity-50">{i + 1}</div>
 
             {canClick(i) && (
-              <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/0 to-blue-400/0 group-hover:from-cyan-400/20 group-hover:to-blue-400/20 transition-all duration-300 rounded-2xl"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/0 to-blue-400/0 group-hover:from-cyan-400/20 group-hover:to-blue-400/20 transition-all duration-300 rounded-lg"></div>
             )}
 
             {playShotAnim && <ShotSmoke keyId={lastShotAnim!.id} />}
