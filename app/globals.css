@@ -119,7 +119,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    padding-top: 150px;
+    /* removed padding-top: 150px to restore original interface positioning */
   }
 }
 
