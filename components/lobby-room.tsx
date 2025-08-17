@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ArrowLeft, Copy, Users } from "lucide-react"
+import { ArrowLeft, Copy, Users, ShoppingCart, X } from "lucide-react"
 import { getLobbyState, leaveLobby, selectRole, setPlayerReady } from "@/app/lobby/actions"
 import type { Lobby, PlayerRole } from "@/lib/lobby-types"
 import Shop from "./shop"
@@ -28,7 +28,8 @@ export default function LobbyRoom({
   const [copied, setCopied] = useState(false)
   const [coins, setCoins] = useState(100)
   const [purchasedItems, setPurchasedItems] = useState<string[]>([])
-  const [phase, setPhase] = useState<"shop" | "ready">("shop")
+  const [phase, setPhase] = useState<"ready">("ready") // убрал фазу shop, сразу ready
+  const [showShop, setShowShop] = useState(false) // добавил состояние для модального магазина
 
   const loadLobbyState = async () => {
     const result = await getLobbyState(lobbyId)
@@ -162,6 +163,35 @@ export default function LobbyRoom({
 
   return (
     <div className="space-y-6 animate-slide-in">
+      {showShop && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 rounded-2xl border border-slate-700 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-slate-900 border-b border-slate-700 p-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <ShoppingCart className="h-8 w-8 text-cyan-400" />
+                <h2 className="text-3xl font-bold text-white">🛒 Магазин</h2>
+              </div>
+              <button
+                onClick={() => setShowShop(false)}
+                className="p-2 hover:bg-slate-800 rounded-xl transition-colors"
+              >
+                <X className="h-6 w-6 text-slate-400" />
+              </button>
+            </div>
+            <div className="p-6">
+              <Shop
+                playerRole={playerRole}
+                coins={coins}
+                purchasedItems={purchasedItems}
+                onPurchase={handlePurchase}
+                playerId={playerId}
+                onCoinsUpdate={handleCoinsUpdate}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <button onClick={handleLeaveLobby} className="game-button-secondary group">
           <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
@@ -204,56 +234,32 @@ export default function LobbyRoom({
         </div>
       )}
 
-      {lobby?.status === "waiting" && (
-        <div className="grid gap-6">
-          {phase === "shop" && playerRole && (
-            <div className="animate-slide-in">
-              <div className="game-card mb-6">
-                <div className="text-center py-4">
-                  <h3 className="text-2xl font-bold text-white mb-2">🛒 Магазин</h3>
-                  <p className="text-slate-400">Купите улучшения перед началом игры</p>
-                </div>
-              </div>
-              <Shop
-                playerRole={playerRole}
-                coins={coins}
-                purchasedItems={purchasedItems}
-                onPurchase={handlePurchase}
-                playerId={playerId}
-                onCoinsUpdate={handleCoinsUpdate}
-              />
-              <div className="text-center mt-6">
-                <button onClick={() => setPhase("ready")} className="game-button-primary px-8 py-3 text-xl">
-                  ✅ Завершить покупки
-                </button>
-              </div>
-            </div>
-          )}
+      {lobby?.status === "waiting" && playerRole && (
+        <div className="text-center animate-bounce-in space-y-6">
+          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+            <button
+              onClick={() => setShowShop(true)}
+              className="w-full sm:w-auto px-12 py-6 text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl hover:scale-105 transition-all duration-300 shadow-2xl shadow-purple-500/25 border-2 border-purple-400/30"
+            >
+              <ShoppingCart className="inline-block mr-3 h-8 w-8" />🛒 Магазин
+            </button>
 
-          {phase === "ready" && playerRole && (
-            <div className="text-center animate-bounce-in">
-              <div className="game-card border-amber-500/50 bg-gradient-to-r from-amber-900/20 to-yellow-900/20 mb-6">
-                <div className="text-amber-300 font-bold text-lg mb-2">⚠️ Подтвердите готовность к игре</div>
-                <div className="text-amber-400/80">Игра начнется только после того, как оба игрока нажмут "Готов"</div>
-              </div>
-              <div className="flex gap-4 justify-center">
-                <button
-                  onClick={() => setPhase("shop")}
-                  className="px-6 py-3 text-lg bg-slate-700 text-white rounded-xl hover:bg-slate-600 transition-colors"
-                >
-                  🛒 Вернуться в магазин
-                </button>
-                <button
-                  onClick={handleReadyToggle}
-                  className={`px-12 py-4 text-2xl font-bold rounded-2xl transition-all duration-300 ${
-                    currentPlayer?.ready
-                      ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white animate-pulse-glow shadow-lg shadow-green-500/25"
-                      : "bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:scale-105 shadow-lg shadow-blue-500/25"
-                  }`}
-                >
-                  {currentPlayer?.ready ? "✅ Готов! Ожидание соперника..." : "🎯 Готов к игре!"}
-                </button>
-              </div>
+            <button
+              onClick={handleReadyToggle}
+              className={`w-full sm:w-auto px-16 py-6 text-2xl font-bold rounded-2xl transition-all duration-300 border-2 ${
+                currentPlayer?.ready
+                  ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white animate-pulse-glow shadow-2xl shadow-green-500/25 border-green-400/30"
+                  : "bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:scale-105 shadow-2xl shadow-blue-500/25 border-blue-400/30"
+              }`}
+            >
+              {currentPlayer?.ready ? "✅ Готов! Ожидание соперника..." : "🎯 Готов к игре!"}
+            </button>
+          </div>
+
+          {!currentPlayer?.ready && (
+            <div className="game-card border-amber-500/50 bg-gradient-to-r from-amber-900/20 to-yellow-900/20">
+              <div className="text-amber-300 font-bold text-lg mb-2">⚠️ Подтвердите готовность к игре</div>
+              <div className="text-amber-400/80">Игра начнется только после того, как оба игрока нажмут "Готов"</div>
             </div>
           )}
         </div>
@@ -320,11 +326,9 @@ export default function LobbyRoom({
           <div className="text-slate-300 text-lg">
             {lobby.players.length < 2
               ? "⏳ Ожидание второго игрока..."
-              : phase === "shop"
-                ? "🛒 Совершите покупки в магазине"
-                : !lobby.players.every((p) => p.ready)
-                  ? "⚡ Нажмите 'Готов' для начала игры"
-                  : "🚀 Все готовы! Запуск игры..."}
+              : !lobby.players.every((p) => p.ready)
+                ? "⚡ Нажмите 'Готов' для начала игры"
+                : "🚀 Все готовы! Запуск игры..."}
           </div>
         )}
         {lobby?.status === "countdown" && (
