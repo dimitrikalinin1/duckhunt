@@ -285,3 +285,35 @@ export async function updatePlayerLevel(playerId: string, role: "hunter" | "duck
     return false
   }
 }
+
+export async function updatePlayerExperience(
+  playerId: string,
+  role: "hunter" | "duck",
+  newExperience: number,
+): Promise<boolean> {
+  try {
+    const supabase = createClient()
+
+    if (!supabase) {
+      console.warn("Supabase client not available, simulating update")
+      return true
+    }
+
+    const experienceField = role === "hunter" ? "hunter_experience" : "duck_experience"
+
+    const { error } = await supabase
+      .from("players")
+      .update({ [experienceField]: newExperience })
+      .eq("id", playerId)
+
+    if (error) {
+      console.error("Error updating player experience:", error)
+      return false
+    }
+
+    return true
+  } catch (error) {
+    console.error("Error in updatePlayerExperience:", error)
+    return false
+  }
+}

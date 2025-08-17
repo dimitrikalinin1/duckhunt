@@ -7,7 +7,13 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { logoutAdmin } from "@/lib/admin-auth"
-import { getPlayersForAdmin, getPlayerInventory, updatePlayerCoins, updatePlayerLevel } from "@/lib/admin-service"
+import {
+  getPlayersForAdmin,
+  getPlayerInventory,
+  updatePlayerCoins,
+  updatePlayerLevel,
+  updatePlayerExperience,
+} from "@/lib/admin-service"
 
 interface PlayerData {
   id: string
@@ -38,6 +44,8 @@ export default function AdminDashboard() {
   const [editCoins, setEditCoins] = useState(0)
   const [editHunterLevel, setEditHunterLevel] = useState(1)
   const [editDuckLevel, setEditDuckLevel] = useState(1)
+  const [editHunterExperience, setEditHunterExperience] = useState(0)
+  const [editDuckExperience, setEditDuckExperience] = useState(0)
   const [updating, setUpdating] = useState(false)
   const router = useRouter()
 
@@ -93,6 +101,8 @@ export default function AdminDashboard() {
     setEditCoins(player.coins)
     setEditHunterLevel(player.hunter_level)
     setEditDuckLevel(player.duck_level)
+    setEditHunterExperience(player.hunter_experience)
+    setEditDuckExperience(player.duck_experience)
     setIsEditing(false)
     loadPlayerInventory(player.id)
   }
@@ -105,13 +115,17 @@ export default function AdminDashboard() {
       const coinsSuccess = await updatePlayerCoins(selectedPlayer.id, editCoins)
       const hunterSuccess = await updatePlayerLevel(selectedPlayer.id, "hunter", editHunterLevel)
       const duckSuccess = await updatePlayerLevel(selectedPlayer.id, "duck", editDuckLevel)
+      const hunterExpSuccess = await updatePlayerExperience(selectedPlayer.id, "hunter", editHunterExperience)
+      const duckExpSuccess = await updatePlayerExperience(selectedPlayer.id, "duck", editDuckExperience)
 
-      if (coinsSuccess && hunterSuccess && duckSuccess) {
+      if (coinsSuccess && hunterSuccess && duckSuccess && hunterExpSuccess && duckExpSuccess) {
         const updatedPlayer = {
           ...selectedPlayer,
           coins: editCoins,
           hunter_level: editHunterLevel,
           duck_level: editDuckLevel,
+          hunter_experience: editHunterExperience,
+          duck_experience: editDuckExperience,
         }
         setSelectedPlayer(updatedPlayer)
         setPlayers(players.map((p) => (p.id === selectedPlayer.id ? updatedPlayer : p)))
@@ -293,22 +307,42 @@ export default function AdminDashboard() {
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium">🏹 Охотник</span>
-                        {isEditing ? (
-                          <input
-                            type="number"
-                            value={editHunterLevel}
-                            onChange={(e) => setEditHunterLevel(Number(e.target.value))}
-                            className="w-16 px-2 py-1 text-xs border border-border rounded"
-                            min="1"
-                            max="100"
-                          />
-                        ) : (
-                          <Badge variant="secondary">Уровень {selectedPlayer.hunter_level}</Badge>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {isEditing ? (
+                            <>
+                              <div className="text-xs text-muted-foreground">Уровень:</div>
+                              <input
+                                type="number"
+                                value={editHunterLevel}
+                                onChange={(e) => setEditHunterLevel(Number(e.target.value))}
+                                className="w-16 px-2 py-1 text-xs border border-border rounded"
+                                min="1"
+                                max="100"
+                              />
+                            </>
+                          ) : (
+                            <Badge variant="secondary">Уровень {selectedPlayer.hunter_level}</Badge>
+                          )}
+                        </div>
                       </div>
                       <Progress value={selectedPlayer.hunter_experience} className="h-2" />
-                      <div className="text-xs text-muted-foreground text-right">
-                        {selectedPlayer.hunter_experience}/100 опыта
+                      <div className="flex justify-between items-center">
+                        <div className="text-xs text-muted-foreground">
+                          {selectedPlayer.hunter_experience}/100 опыта
+                        </div>
+                        {isEditing && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-muted-foreground">Опыт:</span>
+                            <input
+                              type="number"
+                              value={editHunterExperience}
+                              onChange={(e) => setEditHunterExperience(Number(e.target.value))}
+                              className="w-16 px-2 py-1 text-xs border border-border rounded"
+                              min="0"
+                              max="99"
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -316,22 +350,40 @@ export default function AdminDashboard() {
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium">🦆 Утка</span>
-                        {isEditing ? (
-                          <input
-                            type="number"
-                            value={editDuckLevel}
-                            onChange={(e) => setEditDuckLevel(Number(e.target.value))}
-                            className="w-16 px-2 py-1 text-xs border border-border rounded"
-                            min="1"
-                            max="100"
-                          />
-                        ) : (
-                          <Badge variant="secondary">Уровень {selectedPlayer.duck_level}</Badge>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {isEditing ? (
+                            <>
+                              <div className="text-xs text-muted-foreground">Уровень:</div>
+                              <input
+                                type="number"
+                                value={editDuckLevel}
+                                onChange={(e) => setEditDuckLevel(Number(e.target.value))}
+                                className="w-16 px-2 py-1 text-xs border border-border rounded"
+                                min="1"
+                                max="100"
+                              />
+                            </>
+                          ) : (
+                            <Badge variant="secondary">Уровень {selectedPlayer.duck_level}</Badge>
+                          )}
+                        </div>
                       </div>
                       <Progress value={selectedPlayer.duck_experience} className="h-2" />
-                      <div className="text-xs text-muted-foreground text-right">
-                        {selectedPlayer.duck_experience}/100 опыта
+                      <div className="flex justify-between items-center">
+                        <div className="text-xs text-muted-foreground">{selectedPlayer.duck_experience}/100 опыта</div>
+                        {isEditing && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-muted-foreground">Опыт:</span>
+                            <input
+                              type="number"
+                              value={editDuckExperience}
+                              onChange={(e) => setEditDuckExperience(Number(e.target.value))}
+                              className="w-16 px-2 py-1 text-xs border border-border rounded"
+                              min="0"
+                              max="99"
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
