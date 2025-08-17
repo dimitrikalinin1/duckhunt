@@ -10,6 +10,14 @@ export const isSupabaseConfigured =
 // Create a singleton instance of the Supabase client for Client Components
 export const supabase = createClientComponentClient()
 
+export const createClient = () => {
+  if (!isSupabaseConfigured) {
+    console.warn("Supabase is not configured properly")
+    return null
+  }
+  return createClientComponentClient()
+}
+
 export type Player = {
   id: string
   telegram_id: number
