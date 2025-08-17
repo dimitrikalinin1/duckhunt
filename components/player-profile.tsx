@@ -1,62 +1,17 @@
 "use client"
-
-import { useState, useEffect } from "react"
-import { Badge } from "@/components/ui/badge"
-import { User, Target, Bird, Coins, Crown, Star } from "lucide-react"
-import type { Player } from "@/lib/supabase/client"
-import { getOrCreatePlayer } from "@/lib/player-service"
-import { useTelegramUser } from "@/hooks/use-telegram-user"
+import { User, Target, Bird, Coins, Star } from "lucide-react"
+import { usePlayer } from "@/contexts/player-context"
 
 export default function PlayerProfile() {
-  const [player, setPlayer] = useState<Player | null>(null)
-  const [loading, setLoading] = useState(true)
-  const { user: telegramUser, isLoading: telegramLoading } = useTelegramUser()
+  const { player, loading } = usePlayer()
 
-  useEffect(() => {
-    async function loadPlayer() {
-      if (telegramLoading) return
-
-      if (!telegramUser) {
-        console.error("No Telegram user data available")
-        setLoading(false)
-        return
-      }
-
-      try {
-        console.log("Loading player for Telegram user:", telegramUser)
-        const playerData = await getOrCreatePlayer(
-          telegramUser.id,
-          telegramUser.username ||
-            `${telegramUser.first_name}${telegramUser.last_name ? ` ${telegramUser.last_name}` : ""}`,
-        )
-        setPlayer(playerData)
-      } catch (error) {
-        console.error("Error loading player:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadPlayer()
-  }, [telegramUser, telegramLoading])
-
-  if (loading || telegramLoading) {
+  if (loading) {
     return (
       <div className="card-game w-full max-w-md mx-auto animate-pulse">
         <div className="p-8 space-y-4">
           <div className="h-6 bg-gradient-to-r from-gray-300 to-gray-400 rounded-full"></div>
           <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full w-3/4"></div>
           <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full w-1/2"></div>
-        </div>
-      </div>
-    )
-  }
-
-  if (!telegramUser) {
-    return (
-      <div className="card-game w-full max-w-md mx-auto">
-        <div className="p-8 text-center">
-          <p className="text-gray-600 font-medium">Приложение должно быть запущено в Telegram</p>
         </div>
       </div>
     )
@@ -87,14 +42,7 @@ export default function PlayerProfile() {
             </div>
             <div>
               <h2 className="text-xl font-black text-gray-800">{player.username}</h2>
-              <div className="flex items-center gap-2">
-                {telegramUser.is_premium && (
-                  <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 text-xs">
-                    <Crown className="h-3 w-3 mr-1" />
-                    PREMIUM
-                  </Badge>
-                )}
-              </div>
+              <div className="text-sm text-gray-500 font-mono">ID: {player.telegram_id}</div>
             </div>
           </div>
           <div className="text-right">

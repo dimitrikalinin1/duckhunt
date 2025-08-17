@@ -3,17 +3,18 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Gamepad2, Users, Trophy, Star } from "lucide-react"
-import { useTelegramUser } from "@/hooks/use-telegram-user"
+import { usePlayer } from "@/contexts/player-context"
+import PlayerProfile from "@/components/player-profile"
 
 export default function Page() {
   const router = useRouter()
-  const { user: telegramUser, isLoading } = useTelegramUser()
+  const { player, loading } = usePlayer()
 
   const handlePlay = () => {
     router.push("/role-select")
   }
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
@@ -32,6 +33,12 @@ export default function Page() {
             <h1 className="text-5xl md:text-6xl font-bold text-foreground">Duck Hunt</h1>
             <p className="text-xl text-muted-foreground">Тактическая охота в реальном времени</p>
           </div>
+
+          {player && (
+            <div className="flex justify-center">
+              <PlayerProfile />
+            </div>
+          )}
 
           <div className="flex justify-center">
             <Card className="minimal-card w-full max-w-md hover:shadow-lg transition-shadow">
@@ -68,10 +75,10 @@ export default function Page() {
             </Card>
           </div>
 
-          {telegramUser && (
+          {player && (
             <div className="text-center">
               <p className="text-sm text-muted-foreground">
-                Добро пожаловать, <span className="font-medium">{telegramUser.first_name}</span>
+                Добро пожаловать, <span className="font-medium">{player.username}</span>
               </p>
             </div>
           )}
