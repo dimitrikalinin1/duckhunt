@@ -234,6 +234,16 @@ export async function searchPlayers(query: string): Promise<AdminPlayerData[]> {
   }
 }
 
+export function calculateLevelFromExperience(totalExperience: number): { level: number; currentExp: number } {
+  const level = Math.floor(totalExperience / 100) + 1
+  const currentExp = totalExperience % 100
+  return { level, currentExp }
+}
+
+export function calculateExperienceFromLevel(level: number, currentExp = 0): number {
+  return (level - 1) * 100 + currentExp
+}
+
 export async function updatePlayerCoins(playerId: string, newCoins: number): Promise<boolean> {
   try {
     const supabase = createClient()

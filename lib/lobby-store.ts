@@ -63,7 +63,6 @@ export function updateLobby(id: string, action: LobbyAction): Lobby | null {
       }
 
       player.role = action.role
-      player.ready = action.role !== null
 
       // Проверяем готовность к игре
       checkGameStart(lobby)

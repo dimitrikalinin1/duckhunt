@@ -11,8 +11,9 @@ import {
   getPlayersForAdmin,
   getPlayerInventory,
   updatePlayerCoins,
-  updatePlayerLevel,
   updatePlayerExperience,
+  calculateLevelFromExperience,
+  calculateExperienceFromLevel,
 } from "@/lib/admin-service"
 
 interface PlayerData {
@@ -46,6 +47,8 @@ export default function AdminDashboard() {
   const [editDuckLevel, setEditDuckLevel] = useState(1)
   const [editHunterExperience, setEditHunterExperience] = useState(0)
   const [editDuckExperience, setEditDuckExperience] = useState(0)
+  const [editHunterTotalExp, setEditHunterTotalExp] = useState(0)
+  const [editDuckTotalExp, setEditDuckTotalExp] = useState(0)
   const [updating, setUpdating] = useState(false)
   const router = useRouter()
 
@@ -103,8 +106,36 @@ export default function AdminDashboard() {
     setEditDuckLevel(player.duck_level)
     setEditHunterExperience(player.hunter_experience)
     setEditDuckExperience(player.duck_experience)
+    setEditHunterTotalExp(calculateExperienceFromLevel(player.hunter_level, player.hunter_experience))
+    setEditDuckTotalExp(calculateExperienceFromLevel(player.duck_level, player.duck_experience))
     setIsEditing(false)
     loadPlayerInventory(player.id)
+  }
+
+  const handleHunterExpChange = (totalExp: number) => {
+    setEditHunterTotalExp(totalExp)
+    const { level, currentExp } = calculateLevelFromExperience(totalExp)
+    setEditHunterLevel(level)
+    setEditHunterExperience(currentExp)
+  }
+
+  const handleDuckExpChange = (totalExp: number) => {
+    setEditDuckTotalExp(totalExp)
+    const { level, currentExp } = calculateLevelFromExperience(totalExp)
+    setEditDuckLevel(level)
+    setEditDuckExperience(currentExp)
+  }
+
+  const handleHunterLevelChange = (level: number) => {
+    setEditHunterLevel(level)
+    const totalExp = calculateExperienceFromLevel(level, editHunterExperience)
+    setEditHunterTotalExp(totalExp)
+  }
+
+  const handleDuckLevelChange = (level: number) => {
+    setEditDuckLevel(level)
+    const totalExp = calculateExperienceFromLevel(level, editDuckExperience)
+    setEditDuckTotalExp(totalExp)
   }
 
   const handleUpdatePlayer = async () => {
@@ -113,12 +144,10 @@ export default function AdminDashboard() {
     setUpdating(true)
     try {
       const coinsSuccess = await updatePlayerCoins(selectedPlayer.id, editCoins)
-      const hunterSuccess = await updatePlayerLevel(selectedPlayer.id, "hunter", editHunterLevel)
-      const duckSuccess = await updatePlayerLevel(selectedPlayer.id, "duck", editDuckLevel)
-      const hunterExpSuccess = await updatePlayerExperience(selectedPlayer.id, "hunter", editHunterExperience)
-      const duckExpSuccess = await updatePlayerExperience(selectedPlayer.id, "duck", editDuckExperience)
+      const hunterSuccess = await updatePlayerExperience(selectedPlayer.id, "hunter", editHunterTotalExp)
+      const duckSuccess = await updatePlayerExperience(selectedPlayer.id, "duck", editDuckTotalExp)
 
-      if (coinsSuccess && hunterSuccess && duckSuccess && hunterExpSuccess && duckExpSuccess) {
+      if (coinsSuccess && hunterSuccess && duckSuccess) {
         const updatedPlayer = {
           ...selectedPlayer,
           coins: editCoins,
@@ -314,7 +343,7 @@ export default function AdminDashboard() {
                               <input
                                 type="number"
                                 value={editHunterLevel}
-                                onChange={(e) => setEditHunterLevel(Number(e.target.value))}
+                                onChange={(e) => handleHunterLevelChange(Number(e.target.value))}
                                 className="w-16 px-2 py-1 text-xs border border-border rounded"
                                 min="1"
                                 max="100"
@@ -332,14 +361,13 @@ export default function AdminDashboard() {
                         </div>
                         {isEditing && (
                           <div className="flex items-center gap-1">
-                            <span className="text-xs text-muted-foreground">Опыт:</span>
+                            <span className="text-xs text-muted-foreground">Общий опыт:</span>
                             <input
                               type="number"
-                              value={editHunterExperience}
-                              onChange={(e) => setEditHunterExperience(Number(e.target.value))}
-                              className="w-16 px-2 py-1 text-xs border border-border rounded"
+                              value={editHunterTotalExp}
+                              onChange={(e) => handleHunterExpChange(Number(e.target.value))}
+                              className="w-20 px-2 py-1 text-xs border border-border rounded"
                               min="0"
-                              max="99"
                             />
                           </div>
                         )}
@@ -357,7 +385,7 @@ export default function AdminDashboard() {
                               <input
                                 type="number"
                                 value={editDuckLevel}
-                                onChange={(e) => setEditDuckLevel(Number(e.target.value))}
+                                onChange={(e) => handleDuckLevelChange(Number(e.target.value))}
                                 className="w-16 px-2 py-1 text-xs border border-border rounded"
                                 min="1"
                                 max="100"
@@ -373,14 +401,13 @@ export default function AdminDashboard() {
                         <div className="text-xs text-muted-foreground">{selectedPlayer.duck_experience}/100 опыта</div>
                         {isEditing && (
                           <div className="flex items-center gap-1">
-                            <span className="text-xs text-muted-foreground">Опыт:</span>
+                            <span className="text-xs text-muted-foreground">Общий опыт:</span>
                             <input
                               type="number"
-                              value={editDuckExperience}
-                              onChange={(e) => setEditDuckExperience(Number(e.target.value))}
-                              className="w-16 px-2 py-1 text-xs border border-border rounded"
+                              value={editDuckTotalExp}
+                              onChange={(e) => handleDuckExpChange(Number(e.target.value))}
+                              className="w-20 px-2 py-1 text-xs border border-border rounded"
                               min="0"
-                              max="99"
                             />
                           </div>
                         )}
