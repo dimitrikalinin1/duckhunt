@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { logoutAdmin } from "@/lib/admin-auth"
-import { getPlayersForAdmin, getPlayerInventory } from "@/lib/admin-service"
+import { getPlayersForAdmin, getPlayerInventory, updatePlayerCoins, updatePlayerLevel } from "@/lib/admin-service"
 
 interface PlayerData {
   id: string
@@ -34,6 +34,11 @@ export default function AdminDashboard() {
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerData | null>(null)
   const [playerInventory, setPlayerInventory] = useState<InventoryItem[]>([])
   const [inventoryLoading, setInventoryLoading] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editCoins, setEditCoins] = useState(0)
+  const [editHunterLevel, setEditHunterLevel] = useState(1)
+  const [editDuckLevel, setEditDuckLevel] = useState(1)
+  const [updating, setUpdating] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -85,7 +90,42 @@ export default function AdminDashboard() {
 
   const handlePlayerClick = (player: PlayerData) => {
     setSelectedPlayer(player)
+    setEditCoins(player.coins)
+    setEditHunterLevel(player.hunter_level)
+    setEditDuckLevel(player.duck_level)
+    setIsEditing(false)
     loadPlayerInventory(player.id)
+  }
+
+  const handleUpdatePlayer = async () => {
+    if (!selectedPlayer) return
+
+    setUpdating(true)
+    try {
+      const coinsSuccess = await updatePlayerCoins(selectedPlayer.id, editCoins)
+      const hunterSuccess = await updatePlayerLevel(selectedPlayer.id, "hunter", editHunterLevel)
+      const duckSuccess = await updatePlayerLevel(selectedPlayer.id, "duck", editDuckLevel)
+
+      if (coinsSuccess && hunterSuccess && duckSuccess) {
+        const updatedPlayer = {
+          ...selectedPlayer,
+          coins: editCoins,
+          hunter_level: editHunterLevel,
+          duck_level: editDuckLevel,
+        }
+        setSelectedPlayer(updatedPlayer)
+        setPlayers(players.map((p) => (p.id === selectedPlayer.id ? updatedPlayer : p)))
+        setIsEditing(false)
+        alert("Данные игрока успешно обновлены!")
+      } else {
+        alert("Ошибка при обновлении данных игрока")
+      }
+    } catch (error) {
+      console.error("Error updating player:", error)
+      alert("Ошибка при обновлении данных игрока")
+    } finally {
+      setUpdating(false)
+    }
   }
 
   const getItemDisplayName = (itemType: string) => {
@@ -219,7 +259,17 @@ export default function AdminDashboard() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Баланс:</span>
-                        <span className="font-semibold">{selectedPlayer.coins} монет</span>
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            value={editCoins}
+                            onChange={(e) => setEditCoins(Number(e.target.value))}
+                            className="w-20 px-2 py-1 text-xs border border-border rounded"
+                            min="0"
+                          />
+                        ) : (
+                          <span className="font-semibold">{selectedPlayer.coins} монет</span>
+                        )}
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -243,7 +293,18 @@ export default function AdminDashboard() {
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium">🏹 Охотник</span>
-                        <Badge variant="secondary">Уровень {selectedPlayer.hunter_level}</Badge>
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            value={editHunterLevel}
+                            onChange={(e) => setEditHunterLevel(Number(e.target.value))}
+                            className="w-16 px-2 py-1 text-xs border border-border rounded"
+                            min="1"
+                            max="100"
+                          />
+                        ) : (
+                          <Badge variant="secondary">Уровень {selectedPlayer.hunter_level}</Badge>
+                        )}
                       </div>
                       <Progress value={selectedPlayer.hunter_experience} className="h-2" />
                       <div className="text-xs text-muted-foreground text-right">
@@ -255,7 +316,18 @@ export default function AdminDashboard() {
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium">🦆 Утка</span>
-                        <Badge variant="secondary">Уровень {selectedPlayer.duck_level}</Badge>
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            value={editDuckLevel}
+                            onChange={(e) => setEditDuckLevel(Number(e.target.value))}
+                            className="w-16 px-2 py-1 text-xs border border-border rounded"
+                            min="1"
+                            max="100"
+                          />
+                        ) : (
+                          <Badge variant="secondary">Уровень {selectedPlayer.duck_level}</Badge>
+                        )}
                       </div>
                       <Progress value={selectedPlayer.duck_experience} className="h-2" />
                       <div className="text-xs text-muted-foreground text-right">
@@ -332,10 +404,35 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
+                {/* Buttons Section */}
                 <div className="flex gap-2">
-                  <Button onClick={() => setSelectedPlayer(null)} className="flex-1 minimal-button-secondary">
-                    Закрыть
-                  </Button>
+                  {isEditing ? (
+                    <>
+                      <Button onClick={handleUpdatePlayer} disabled={updating} className="flex-1 minimal-button">
+                        {updating ? "Сохранение..." : "Сохранить"}
+                      </Button>
+                      <Button
+                        onClick={() => setIsEditing(false)}
+                        variant="outline"
+                        className="flex-1 minimal-button-secondary"
+                      >
+                        Отмена
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button onClick={() => setIsEditing(true)} className="flex-1 minimal-button">
+                        Редактировать
+                      </Button>
+                      <Button
+                        onClick={() => setSelectedPlayer(null)}
+                        variant="outline"
+                        className="flex-1 minimal-button-secondary"
+                      >
+                        Закрыть
+                      </Button>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -233,3 +233,55 @@ export async function searchPlayers(query: string): Promise<AdminPlayerData[]> {
     return []
   }
 }
+
+export async function updatePlayerCoins(playerId: string, newCoins: number): Promise<boolean> {
+  try {
+    const supabase = createClient()
+
+    if (!supabase) {
+      console.warn("Supabase client not available, simulating update")
+      return true
+    }
+
+    const { error } = await supabase.from("players").update({ coins: newCoins }).eq("id", playerId)
+
+    if (error) {
+      console.error("Error updating player coins:", error)
+      return false
+    }
+
+    return true
+  } catch (error) {
+    console.error("Error in updatePlayerCoins:", error)
+    return false
+  }
+}
+
+export async function updatePlayerLevel(playerId: string, role: "hunter" | "duck", newLevel: number): Promise<boolean> {
+  try {
+    const supabase = createClient()
+
+    if (!supabase) {
+      console.warn("Supabase client not available, simulating update")
+      return true
+    }
+
+    const experienceField = role === "hunter" ? "hunter_experience" : "duck_experience"
+    const newExperience = (newLevel - 1) * 100
+
+    const { error } = await supabase
+      .from("players")
+      .update({ [experienceField]: newExperience })
+      .eq("id", playerId)
+
+    if (error) {
+      console.error("Error updating player level:", error)
+      return false
+    }
+
+    return true
+  } catch (error) {
+    console.error("Error in updatePlayerLevel:", error)
+    return false
+  }
+}

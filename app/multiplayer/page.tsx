@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button" // исправляем импорт кнопки
+import { useRouter, useSearchParams } from "next/navigation"
+import { Button } from "@/components/ui/button"
 import LobbyBrowser from "@/components/lobby-browser"
 import LobbyRoom from "@/components/lobby-room"
 import GameSession from "@/components/game-session"
@@ -17,12 +17,19 @@ export default function MultiplayerPage() {
   const [gameStarted, setGameStarted] = useState(false)
   const [playerRole, setPlayerRole] = useState<PlayerRole>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  const preferredRole = searchParams.get("role") as PlayerRole
 
   useEffect(() => {
     const names = ["Игрок", "Охотник", "Утка", "Снайпер", "Следопыт", "Разведчик"]
     const randomName = names[Math.floor(Math.random() * names.length)] + Math.floor(Math.random() * 1000)
     setPlayerName(randomName)
-  }, [])
+
+    if (preferredRole && (preferredRole === "hunter" || preferredRole === "duck")) {
+      setPlayerRole(preferredRole)
+    }
+  }, [preferredRole])
 
   const handleJoinLobby = (lobbyId: string) => {
     setCurrentLobby(lobbyId)
@@ -31,7 +38,9 @@ export default function MultiplayerPage() {
   const handleLeaveLobby = () => {
     setCurrentLobby(null)
     setGameStarted(false)
-    setPlayerRole(null)
+    if (!preferredRole) {
+      setPlayerRole(null)
+    }
   }
 
   const handleStartGame = (role: PlayerRole) => {
@@ -40,13 +49,16 @@ export default function MultiplayerPage() {
   }
 
   const handleBackToMainMenu = () => {
-    router.push("/")
+    if (preferredRole) {
+      router.push(`/character/${preferredRole}`)
+    } else {
+      router.push("/")
+    }
   }
 
   if (gameStarted && playerRole) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width%3D%2260%22 height%3D%2260%22 viewBox%3D%220 0 60 60%22 xmlns%3D%22http://www.w3.org/2000/svg%22%3E%3Cg fill%3D%22none%22 fillRule%3D%22evenodd%22%3E%3Cg fill%3D%22%239C92AC%22 fillOpacity%3D%220.1%22%3E%3Ccircle cx%3D%2230%22 cy%3D%2230%22 r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
+      <div className="min-h-screen bg-background p-4">
         <GameSession
           playerCharacter={playerRole as PlayerCharacter}
           onBackToMenu={handleBackToMainMenu}
@@ -60,12 +72,15 @@ export default function MultiplayerPage() {
 
   if (currentLobby) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width%3D%2260%22 height%3D%2260%22 viewBox%3D%220 0 60 60%22 xmlns%3D%22http://www.w3.org/2000/svg%22%3E%3Cg fill%3D%22none%22 fillRule%3D%22evenodd%22%3E%3Cg fill%3D%22%239C92AC%22 fillOpacity%3D%220.1%22%3E%3Ccircle cx%3D%2230%22 cy%3D%2230%22 r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
-        <div className="max-w-4xl mx-auto relative z-10">
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-4xl mx-auto">
           <div className="mb-6">
-            <Button onClick={handleBackToMainMenu} className="game-button-secondary group">
-              <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+            <Button
+              onClick={handleBackToMainMenu}
+              variant="outline"
+              className="minimal-button-secondary bg-transparent"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Назад
             </Button>
           </div>
@@ -75,6 +90,7 @@ export default function MultiplayerPage() {
             onLeaveLobby={handleLeaveLobby}
             onStartGame={handleStartGame}
             onBackToMenu={handleBackToMainMenu}
+            preferredRole={preferredRole}
           />
         </div>
       </div>
@@ -82,12 +98,11 @@ export default function MultiplayerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width%3D%2260%22 height%3D%2260%22 viewBox%3D%220 0 60 60%22 xmlns%3D%22http://www.w3.org/2000/svg%22%3E%3Cg fill%3D%22none%22 fillRule%3D%22evenodd%22%3E%3Cg fill%3D%22%239C92AC%22 fillOpacity%3D%220.1%22%3E%3Ccircle cx%3D%2230%22 cy%3D%2230%22 r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
-      <div className="max-w-md mx-auto relative z-10">
+    <div className="min-h-screen bg-background p-4">
+      <div className="max-w-md mx-auto">
         <div className="mb-6">
-          <Button onClick={handleBackToMainMenu} className="game-button-secondary group">
-            <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+          <Button onClick={handleBackToMainMenu} variant="outline" className="minimal-button-secondary bg-transparent">
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Назад
           </Button>
         </div>
@@ -96,6 +111,7 @@ export default function MultiplayerPage() {
           playerName={playerName}
           onJoinLobby={handleJoinLobby}
           onBackToMenu={handleBackToMainMenu}
+          preferredRole={preferredRole}
         />
       </div>
     </div>

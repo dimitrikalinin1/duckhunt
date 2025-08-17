@@ -69,6 +69,34 @@ export async function getOrCreatePlayer(telegramId: number, username?: string): 
   }
 }
 
+export async function getPlayerData(telegramId: string): Promise<{
+  id: string
+  username: string
+  coins: number
+  hunter_level: number
+  hunter_experience: number
+  duck_level: number
+  duck_experience: number
+} | null> {
+  try {
+    const player = await getOrCreatePlayer(Number.parseInt(telegramId))
+    if (!player) return null
+
+    return {
+      id: player.id,
+      username: player.username,
+      coins: player.coins,
+      hunter_level: player.hunter_level,
+      hunter_experience: player.hunter_experience,
+      duck_level: player.duck_level,
+      duck_experience: player.duck_experience,
+    }
+  } catch (error) {
+    console.error("Error in getPlayerData:", error)
+    return null
+  }
+}
+
 // Получить инвентарь игрока
 export async function getPlayerInventory(playerId: string): Promise<InventoryItem[]> {
   if (!isSupabaseConfigured) {
