@@ -4,76 +4,76 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Updated to game UI color scheme with emerald accents */
-  --background: #000000; /* Black Theme */
-  --foreground: #ffffff; /* White for text */
-  --card: #1c1c1e; /* Dark gray for panels */
-  --card-foreground: #f1f5f9; /* Light gray for card text */
-  --popover: #1c1c1e; /* Dark gray for popovers */
-  --popover-foreground: #ffffff; /* White for popover text */
-  --primary: #059669; /* Primary buttons - emerald */
-  --primary-foreground: #ffffff; /* White text on primary buttons */
-  --secondary: #10b981; /* Accent buttons - bright emerald */
-  --secondary-foreground: #ffffff; /* White text on secondary buttons */
-  --muted: #1c1c1e; /* Muted elements */
-  --muted-foreground: #f1f5f9; /* Light gray for muted text */
-  --accent: #10b981; /* Accent color for highlights */
-  --accent-foreground: #000000; /* Black text on accent backgrounds */
-  --destructive: #ff4d4d; /* Red for destructive actions */
-  --destructive-foreground: #ffffff; /* White for destructive text */
-  --border: #475569; /* Neutral border color */
-  --input: #1c1c1e; /* Input fields */
-  --ring: #10b981; /* Focus ring color */
-  --chart-1: #059669; /* Chart color 1 */
-  --chart-2: #10b981; /* Chart color 2 */
-  --chart-3: #4b5563; /* Chart color 3 */
-  --chart-4: #ffffff; /* Chart color 4 */
-  --chart-5: #f1f5f9; /* Chart color 5 */
+  /* Updated to Figma Game UI Wireframe Kit color scheme */
+  --background: #1f2937; /* Dark Gray */
+  --foreground: #ffffff; /* White */
+  --card: rgba(31, 41, 55, 0.8); /* Semi-transparent dark */
+  --card-foreground: #ffffff; /* White */
+  --popover: rgba(31, 41, 55, 0.9); /* Darker overlay */
+  --popover-foreground: #ffffff; /* White */
+  --primary: #15803d; /* Green */
+  --primary-foreground: #ffffff; /* White */
+  --secondary: #84cc16; /* Bright Green */
+  --secondary-foreground: #1f2937; /* Dark Gray */
+  --muted: rgba(255, 255, 255, 0.7); /* Muted White */
+  --muted-foreground: #1f2937; /* Dark Gray */
+  --accent: #ff3d00; /* Neon Orange */
+  --accent-foreground: #ffffff; /* White */
+  --destructive: #e53e3e; /* Red for destructive actions */
+  --destructive-foreground: #ffffff; /* White */
+  --border: #4b5563; /* Dark border */
+  --input: #374151; /* Dark Input Field */
+  --ring: #84cc16; /* Bright Green for focus states */
+  --chart-1: #15803d; /* Green for charts */
+  --chart-2: #ff3d00; /* Neon Orange for charts */
+  --chart-3: #84cc16; /* Bright Green for charts */
+  --chart-4: #ffffff; /* White for charts */
+  --chart-5: #374151; /* Dark Gray for charts */
   --radius: 0.5rem; /* Rounded corners */
-  --sidebar: #1c1c1e; /* Sidebar background */
-  --sidebar-foreground: #ffffff; /* Sidebar text color */
-  --sidebar-primary: #059669; /* Sidebar primary color */
-  --sidebar-primary-foreground: #ffffff; /* Sidebar primary text */
-  --sidebar-accent: #10b981; /* Sidebar accent color */
-  --sidebar-accent-foreground: #000000; /* Sidebar accent text */
-  --sidebar-border: #475569; /* Sidebar border color */
-  --sidebar-ring: #10b981; /* Sidebar focus ring */
+  --sidebar: #1f2937; /* Sidebar background */
+  --sidebar-foreground: #ffffff; /* Sidebar text */
+  --sidebar-primary: #15803d; /* Sidebar primary action */
+  --sidebar-primary-foreground: #ffffff; /* Sidebar primary action text */
+  --sidebar-accent: #ff3d00; /* Sidebar accent color */
+  --sidebar-accent-foreground: #ffffff; /* Sidebar accent text */
+  --sidebar-border: #4b5563; /* Sidebar border */
+  --sidebar-ring: #84cc16; /* Sidebar focus ring */
 }
 
 .dark {
-  /* Updated dark mode to match game UI theme */
-  --background: #000000;
+  /* Updated dark mode to match Figma game UI theme */
+  --background: #1f2937;
   --foreground: #ffffff;
-  --card: #1c1c1e;
-  --card-foreground: #f1f5f9;
-  --popover: #1c1c1e;
+  --card: rgba(31, 41, 55, 0.8);
+  --card-foreground: #ffffff;
+  --popover: rgba(31, 41, 55, 0.9);
   --popover-foreground: #ffffff;
-  --primary: #059669;
+  --primary: #15803d;
   --primary-foreground: #ffffff;
-  --secondary: #10b981;
-  --secondary-foreground: #ffffff;
-  --muted: #1c1c1e;
-  --muted-foreground: #f1f5f9;
-  --accent: #10b981;
-  --accent-foreground: #000000;
-  --destructive: #ff4d4d;
+  --secondary: #84cc16;
+  --secondary-foreground: #1f2937;
+  --muted: rgba(255, 255, 255, 0.7);
+  --muted-foreground: #1f2937;
+  --accent: #ff3d00;
+  --accent-foreground: #ffffff;
+  --destructive: #e53e3e;
   --destructive-foreground: #ffffff;
-  --border: #475569;
-  --input: #1c1c1e;
-  --ring: #10b981;
-  --chart-1: #059669;
-  --chart-2: #10b981;
-  --chart-3: #4b5563;
+  --border: #4b5563;
+  --input: #374151;
+  --ring: #84cc16;
+  --chart-1: #15803d;
+  --chart-2: #ff3d00;
+  --chart-3: #84cc16;
   --chart-4: #ffffff;
-  --chart-5: #f1f5f9;
-  --sidebar: #1c1c1e;
+  --chart-5: #374151;
+  --sidebar: #1f2937;
   --sidebar-foreground: #ffffff;
-  --sidebar-primary: #059669;
+  --sidebar-primary: #15803d;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #10b981;
-  --sidebar-accent-foreground: #000000;
-  --sidebar-border: #475569;
-  --sidebar-ring: #10b981;
+  --sidebar-accent: #ff3d00;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #4b5563;
+  --sidebar-ring: #84cc16;
 }
 
 @theme inline {
@@ -121,8 +121,8 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Updated to use semantic tokens */
-    font-family: "Work Sans", "Open Sans", system-ui, sans-serif;
+    /* Updated to use DM Sans font family for game UI */
+    font-family: "DM Sans", "Work Sans", system-ui, sans-serif;
   }
 
   html {
@@ -133,25 +133,24 @@
 
 /* Simplified minimal design system */
 .minimal-card {
-  @apply bg-card border border-border rounded-lg p-4 shadow-lg;
-  background-color: #1c1c1e !important;
-  border-color: #475569 !important;
+  @apply bg-card border border-border rounded-xl p-6 shadow-2xl;
+  background: linear-gradient(135deg, var(--card) 0%, rgba(31, 41, 55, 0.6) 100%);
+  border-color: var(--border);
+  backdrop-filter: blur(8px);
 }
 
 .minimal-button {
-  @apply bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-semibold hover:opacity-90 transition-opacity border border-primary/20;
+  @apply bg-gradient-to-r from-primary to-secondary text-primary-foreground px-6 py-3 rounded-xl text-sm font-black tracking-wide hover:opacity-90 transition-all duration-300 border-2 border-primary/30 shadow-xl hover:shadow-2xl hover:scale-105;
 }
 
 .minimal-button-secondary {
-  @apply bg-secondary text-secondary-foreground px-4 py-2 rounded-md text-sm font-semibold hover:bg-secondary/80 transition-colors border border-border;
-  background-color: #10b981 !important;
-  color: #ffffff !important;
+  @apply bg-gradient-to-r from-secondary to-accent text-secondary-foreground px-6 py-3 rounded-xl text-sm font-black tracking-wide hover:opacity-90 transition-all duration-300 border-2 border-secondary/30 shadow-xl hover:shadow-2xl hover:scale-105;
 }
 
 .minimal-input {
-  @apply bg-background border-2 border-input rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent;
-  background-color: #1c1c1e !important;
-  color: #ffffff !important;
+  @apply bg-input border-2 border-border rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring/50 transition-all duration-200 shadow-lg;
+  background-color: var(--input);
+  color: var(--foreground);
 }
 
 /* Essential game animations only */
@@ -260,45 +259,44 @@
   animation: smokePuff 900ms ease-out forwards;
 }
 
-/* Game-specific UI components with emerald theme and better constraints */
+/* Game-specific UI components with Figma game UI styling */
 .game-button {
-  @apply bg-primary text-primary-foreground px-6 py-3 rounded-lg text-base font-bold hover:bg-primary/90 transition-all duration-200 border-2 border-primary/20 shadow-lg hover:shadow-xl transform hover:scale-105 max-w-full;
+  @apply bg-gradient-to-r from-primary to-secondary text-primary-foreground px-8 py-4 rounded-xl text-lg font-black tracking-wide hover:from-primary/90 hover:to-secondary/90 transition-all duration-300 border-2 border-primary/30 shadow-2xl hover:shadow-primary/50 transform hover:scale-105 max-w-full;
 }
 
 .game-button-secondary {
-  @apply bg-secondary text-secondary-foreground px-6 py-3 rounded-lg text-base font-bold hover:bg-secondary/90 transition-all duration-200 border-2 border-secondary/20 shadow-lg hover:shadow-xl transform hover:scale-105 max-w-full;
+  @apply bg-gradient-to-r from-secondary to-accent text-secondary-foreground px-8 py-4 rounded-xl text-lg font-black tracking-wide hover:from-secondary/90 hover:to-accent/90 transition-all duration-300 border-2 border-secondary/30 shadow-2xl hover:shadow-secondary/50 transform hover:scale-105 max-w-full;
 }
 
-/* Fixed game-card class by removing @apply and using pure CSS */
 .game-card {
-  background: linear-gradient(135deg, var(--card) 0%, rgba(28, 28, 30, 0.8) 100%);
+  background: linear-gradient(135deg, var(--card) 0%, rgba(31, 41, 55, 0.6) 100%);
   border: 2px solid var(--border);
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(4px);
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
   max-width: 100%;
   overflow: hidden;
 }
 
 .game-panel {
-  background: linear-gradient(135deg, var(--card) 0%, rgba(28, 28, 30, 0.8) 100%);
+  background: linear-gradient(135deg, var(--card) 0%, rgba(31, 41, 55, 0.6) 100%);
   border: 2px solid var(--border);
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(4px);
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
   max-width: 100%;
   overflow: hidden;
 }
 
 .role-card {
-  background: linear-gradient(135deg, var(--card) 0%, rgba(28, 28, 30, 0.8) 100%);
+  background: linear-gradient(135deg, var(--card) 0%, rgba(31, 41, 55, 0.6) 100%);
   border: 2px solid var(--border);
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(4px);
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
   max-width: 100%;
   overflow: hidden;
   cursor: pointer;
@@ -306,8 +304,8 @@
 }
 
 .role-card:hover {
-  border-color: rgba(5, 150, 105, 0.5);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  border-color: var(--primary);
+  box-shadow: 0 25px 50px -12px rgba(21, 128, 61, 0.3);
   transform: scale(1.02);
 }
 
@@ -334,15 +332,14 @@
   scroll-snap-align: center;
 }
 
-/* Game-specific animations with emerald theme */
+/* Game-specific animations with enhanced effects */
 @keyframes glow-pulse {
-  /* Fixed CSS syntax by removing backslashes */
   0%,
   100% {
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 0 20px rgba(21, 128, 61, 0.4);
   }
   50% {
-    box-shadow: 0 0 30px rgba(16, 185, 129, 0.6);
+    box-shadow: 0 0 40px rgba(21, 128, 61, 0.8);
   }
 }
 
@@ -356,10 +353,32 @@
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(-8px);
+    transform: translateY(-12px);
   }
 }
 
 .animate-float-gentle {
-  animation: float-gentle 3s ease-in-out infinite;
+  animation: float-gentle 4s ease-in-out infinite;
+}
+
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.6s ease-out;
 }
