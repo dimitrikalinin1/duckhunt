@@ -3,7 +3,7 @@
 import { getGameState, updateGameState, createInitialGameState } from "@/lib/game-state"
 import { LEVELS, gridSize } from "@/lib/game-config"
 import { calculateArmoredFeatherProtection } from "@/lib/perks-system"
-import { updatePlayerExperience, saveGameHistory } from "@/lib/player-service"
+import { updatePlayerExperience, saveGameHistory, updatePlayerCoins } from "@/lib/player-service"
 
 // Вспомогательные функции
 function sample<T>(arr: T[]) {
@@ -574,6 +574,17 @@ export async function endGameWithOutcome(
     hunterGoldChange = -currentState.hunterBet
   }
 
+  const newHunterGold = currentState.hunterGold + hunterGoldChange
+  const newDuckGold = currentState.duckGold + duckGoldChange
+
+  // Сохраняем новый баланс в базу данных
+  if (hunterPlayerId) {
+    await updatePlayerCoins(hunterPlayerId, newHunterGold)
+  }
+  if (duckPlayerId) {
+    await updatePlayerCoins(duckPlayerId, newDuckGold)
+  }
+
   // Добавление начисления опыта за игру
   const baseExperience = 50
   const winnerBonus = 25
@@ -611,8 +622,8 @@ export async function endGameWithOutcome(
   const updatedState = updateGameState(lobbyId, {
     outcome,
     turn: "ended",
-    hunterGold: currentState.hunterGold + hunterGoldChange,
-    duckGold: currentState.duckGold + duckGoldChange,
+    hunterGold: newHunterGold,
+    duckGold: newDuckGold,
     lastAction: {
       type: "game-ended",
       playerId: "system",
