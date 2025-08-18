@@ -270,6 +270,91 @@ export async function updatePlayerExperience(
   }
 }
 
+export async function saveGameToHistory(gameData: {
+  sessionId: string
+  lobbyId: string
+  hunterPlayerId: string
+  duckPlayerId: string
+  winner: "hunter" | "duck"
+  reason: string
+  hunterBet?: number
+  duckBet?: number
+  hunterCoinsChange: number
+  duckCoinsChange: number
+  hunterExperienceGained: number
+  duckExperienceGained: number
+  shotsFired: number
+  movesMade: number
+  durationSeconds: number
+}): Promise<boolean> {
+  if (!isSupabaseConfigured) {
+    console.warn("Supabase not configured, skipping game history save")
+    return true
+  }
+
+  try {
+    console.log("[v0] Saving game session to history:", gameData)
+
+    const { error } = await supabase.from("game_history").insert({
+      session_id: gameData.sessionId,
+      lobby_id: gameData.lobbyId,
+      hunter_player_id: gameData.hunterPlayerId,
+      duck_player_id: gameData.duckPlayerId,
+      winner: gameData.winner,
+      reason: gameData.reason,
+      hunter_bet: gameData.hunterBet || 0,
+      duck_bet: gameData.duckBet || 0,
+      hunter_coins_change: gameData.hunterCoinsChange,
+      duck_coins_change: gameData.duckCoinsChange,
+      hunter_experience_gained: gameData.hunterExperienceGained,
+      duck_experience_gained: gameData.duckExperienceGained,
+      shots_fired: gameData.shotsFired,
+      moves_made: gameData.movesMade,
+      duration_seconds: gameData.durationSeconds,
+    })
+
+    if (error) {
+      console.error("[v0] Error saving game session to history:", error)
+      return false
+    }
+
+    console.log("[v0] Successfully saved game session to history")
+    return true
+  } catch (error) {
+    console.error("[v0] Error in saveGameToHistory:", error)
+    return false
+  }
+}
+
+export async function getGameHistoryForAdmin(): Promise<any[]> {
+  if (!isSupabaseConfigured) {
+    console.warn("Supabase not configured, returning empty game history")
+    return []
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("game_history")
+      .select(`
+        *,
+        hunter:hunter_player_id(username),
+        duck:duck_player_id(username)
+      `)
+      .order("created_at", { ascending: false })
+      .limit(100)
+
+    if (error) {
+      console.error("Error fetching game history for admin:", error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error("Error in getGameHistoryForAdmin:", error)
+    return []
+  }
+}
+
 export async function saveGameHistory(gameData: {
   hunterPlayerId: string
   duckPlayerId: string
@@ -282,38 +367,21 @@ export async function saveGameHistory(gameData: {
   hunterExpGained?: number
   duckExpGained?: number
 }): Promise<boolean> {
-  if (!isSupabaseConfigured) {
-    console.warn("Supabase not configured, skipping game history save")
-    return true
-  }
-
-  try {
-    console.log("Saving game history:", gameData)
-
-    const { error } = await supabase.from("game_history").insert({
-      hunter_player_id: gameData.hunterPlayerId,
-      duck_player_id: gameData.duckPlayerId,
-      winner_role: gameData.winnerRole,
-      game_duration: gameData.gameDuration || 0,
-      hunter_shots: gameData.hunterShots || 0,
-      duck_moves: gameData.duckMoves || 0,
-      hunter_coins_change: gameData.hunterCoinsChange || 0,
-      duck_coins_change: gameData.duckCoinsChange || 0,
-      hunter_exp_gained: gameData.hunterExpGained || 0,
-      duck_exp_gained: gameData.duckExpGained || 0,
-    })
-
-    if (error) {
-      console.error("Error saving game history:", error)
-      return false
-    }
-
-    console.log("Successfully saved game history")
-    return true
-  } catch (error) {
-    console.error("Error in saveGameHistory:", error)
-    return false
-  }
+  return saveGameToHistory({
+    sessionId: crypto.randomUUID(),
+    lobbyId: "legacy",
+    hunterPlayerId: gameData.hunterPlayerId,
+    duckPlayerId: gameData.duckPlayerId,
+    winner: gameData.winnerRole,
+    reason: "game-completed",
+    hunterCoinsChange: gameData.hunterCoinsChange || 0,
+    duckCoinsChange: gameData.duckCoinsChange || 0,
+    hunterExperienceGained: gameData.hunterExpGained || 0,
+    duckExperienceGained: gameData.duckExpGained || 0,
+    shotsFired: gameData.hunterShots || 0,
+    movesMade: gameData.duckMoves || 0,
+    durationSeconds: gameData.gameDuration || 0,
+  })
 }
 
 export async function getPlayerStats(
@@ -355,13 +423,13 @@ export async function getPlayerStats(
 
     let wins = 0
     games.forEach((game) => {
-      if (role === "hunter" && game.winner_role === "hunter") wins++
-      else if (role === "duck" && game.winner_role === "duck") wins++
+      if (role === "hunter" && game.winner === "hunter") wins++
+      else if (role === "duck" && game.winner === "duck") wins++
       else if (!role) {
         // Общая статистика - считаем победы в любой роли
         if (
-          (game.hunter_player_id === playerId && game.winner_role === "hunter") ||
-          (game.duck_player_id === playerId && game.winner_role === "duck")
+          (game.hunter_player_id === playerId && game.winner === "hunter") ||
+          (game.duck_player_id === playerId && game.winner === "duck")
         ) {
           wins++
         }
