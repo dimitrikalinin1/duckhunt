@@ -38,3 +38,18 @@ export type InventoryItem = {
   quantity: number
   created_at: string
 }
+
+export type GameHistory = {
+  id: string
+  hunter_player_id: string
+  duck_player_id: string
+  winner_role: "hunter" | "duck"
+  game_duration: number
+  hunter_shots: number
+  duck_moves: number
+  hunter_coins_change: number
+  duck_coins_change: number
+  hunter_exp_gained: number
+  duck_exp_gained: number
+  created_at: string
+}

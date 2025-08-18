@@ -242,3 +242,111 @@ export async function updatePlayerExperience(
     return false
   }
 }
+
+export async function saveGameHistory(gameData: {
+  hunterPlayerId: string
+  duckPlayerId: string
+  winnerRole: "hunter" | "duck"
+  gameDuration?: number
+  hunterShots?: number
+  duckMoves?: number
+  hunterCoinsChange?: number
+  duckCoinsChange?: number
+  hunterExpGained?: number
+  duckExpGained?: number
+}): Promise<boolean> {
+  if (!isSupabaseConfigured) {
+    console.warn("Supabase not configured, skipping game history save")
+    return true
+  }
+
+  try {
+    console.log("Saving game history:", gameData)
+
+    const { error } = await supabase.from("game_history").insert({
+      hunter_player_id: gameData.hunterPlayerId,
+      duck_player_id: gameData.duckPlayerId,
+      winner_role: gameData.winnerRole,
+      game_duration: gameData.gameDuration || 0,
+      hunter_shots: gameData.hunterShots || 0,
+      duck_moves: gameData.duckMoves || 0,
+      hunter_coins_change: gameData.hunterCoinsChange || 0,
+      duck_coins_change: gameData.duckCoinsChange || 0,
+      hunter_exp_gained: gameData.hunterExpGained || 0,
+      duck_exp_gained: gameData.duckExpGained || 0,
+    })
+
+    if (error) {
+      console.error("Error saving game history:", error)
+      return false
+    }
+
+    console.log("Successfully saved game history")
+    return true
+  } catch (error) {
+    console.error("Error in saveGameHistory:", error)
+    return false
+  }
+}
+
+export async function getPlayerStats(
+  playerId: string,
+  role?: "hunter" | "duck",
+): Promise<{
+  totalGames: number
+  wins: number
+  losses: number
+  winRate: number
+} | null> {
+  if (!isSupabaseConfigured) {
+    console.warn("Supabase not configured, returning mock stats")
+    return { totalGames: 5, wins: 3, losses: 2, winRate: 60 }
+  }
+
+  try {
+    console.log("Fetching player stats:", { playerId, role })
+
+    let query = supabase.from("game_history").select("*")
+
+    if (role === "hunter") {
+      query = query.eq("hunter_player_id", playerId)
+    } else if (role === "duck") {
+      query = query.eq("duck_player_id", playerId)
+    } else {
+      query = query.or(`hunter_player_id.eq.${playerId},duck_player_id.eq.${playerId}`)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error("Error fetching player stats:", error)
+      return null
+    }
+
+    const games = data || []
+    const totalGames = games.length
+
+    let wins = 0
+    games.forEach((game) => {
+      if (role === "hunter" && game.winner_role === "hunter") wins++
+      else if (role === "duck" && game.winner_role === "duck") wins++
+      else if (!role) {
+        // Общая статистика - считаем победы в любой роли
+        if (
+          (game.hunter_player_id === playerId && game.winner_role === "hunter") ||
+          (game.duck_player_id === playerId && game.winner_role === "duck")
+        ) {
+          wins++
+        }
+      }
+    })
+
+    const losses = totalGames - wins
+    const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0
+
+    return { totalGames, wins, losses, winRate }
+  } catch (error) {
+    console.error("Error in getPlayerStats:", error)
+    return null
+  }
+}

@@ -3,7 +3,7 @@
 import { getGameState, updateGameState, createInitialGameState } from "@/lib/game-state"
 import { LEVELS, gridSize } from "@/lib/game-config"
 import { calculateArmoredFeatherProtection } from "@/lib/perks-system"
-import { updatePlayerExperience } from "@/lib/player-service"
+import { updatePlayerExperience, saveGameHistory } from "@/lib/player-service"
 
 // Вспомогательные функции
 function sample<T>(arr: T[]) {
@@ -577,15 +577,35 @@ export async function endGameWithOutcome(
   // Добавление начисления опыта за игру
   const baseExperience = 50
   const winnerBonus = 25
+  let hunterExpGained = 0
+  let duckExpGained = 0
 
   if (hunterPlayerId) {
-    const hunterExp = outcome.winner === "hunter" ? baseExperience + winnerBonus : baseExperience
-    await updatePlayerExperience(hunterPlayerId, "hunter", hunterExp)
+    hunterExpGained = outcome.winner === "hunter" ? baseExperience + winnerBonus : baseExperience
+    await updatePlayerExperience(hunterPlayerId, "hunter", hunterExpGained)
   }
 
   if (duckPlayerId) {
-    const duckExp = outcome.winner === "duck" ? baseExperience + winnerBonus : baseExperience
-    await updatePlayerExperience(duckPlayerId, "duck", duckExp)
+    duckExpGained = outcome.winner === "duck" ? baseExperience + winnerBonus : baseExperience
+    await updatePlayerExperience(duckPlayerId, "duck", duckExpGained)
+  }
+
+  if (hunterPlayerId && duckPlayerId) {
+    const gameStartTime = currentState.lastAction?.timestamp || Date.now()
+    const gameDuration = Math.floor((Date.now() - gameStartTime) / 1000)
+
+    await saveGameHistory({
+      hunterPlayerId,
+      duckPlayerId,
+      winnerRole: outcome.winner,
+      gameDuration,
+      hunterShots: currentState.shotCells?.length || 0,
+      duckMoves: currentState.lastAction?.type === "duck-flight" ? 1 : 0, // Упрощенный подсчет ходов
+      hunterCoinsChange: hunterGoldChange,
+      duckCoinsChange: duckGoldChange,
+      hunterExpGained,
+      duckExpGained,
+    })
   }
 
   const updatedState = updateGameState(lobbyId, {
