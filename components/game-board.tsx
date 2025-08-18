@@ -3,7 +3,6 @@
 import { cn } from "@/lib/utils"
 import ShotSmoke from "@/components/shot-smoke"
 import Image from "next/image"
-import { GameIcons } from "@/components/game-icons"
 
 export type CellOverlay = {
   beaver?: boolean
@@ -35,7 +34,7 @@ export default function GameBoard({ rows, cols, activeCells, overlays, lastShotA
     <div
       role="grid"
       aria-label="Игровое поле"
-      className="grid gap-1 p-4 max-w-lg mx-auto select-none bg-gradient-to-br from-card/50 to-muted/30 rounded-xl border-2 border-border/50 shadow-2xl backdrop-blur-sm"
+      className="grid p-1 max-w-md mx-auto select-none"
       style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
     >
       {indices.map((i) => {
@@ -50,20 +49,16 @@ export default function GameBoard({ rows, cols, activeCells, overlays, lastShotA
             role="gridcell"
             onClick={() => onCellClick(i)}
             className={cn(
-              "relative w-full h-0 pb-[100%] rounded-lg border-2 text-sm transition-all duration-300 overflow-hidden",
-              "touch-manipulation select-none box-border min-h-[48px] min-w-[48px]",
-              "bg-gradient-to-br from-muted/80 to-card/60 border-border/60 shadow-lg",
-              "hover:shadow-xl hover:scale-105 transform-gpu",
-              isActive &&
-                "from-primary/30 to-secondary/20 border-primary/70 shadow-lg shadow-primary/30 ring-2 ring-primary/50",
-              canClick(i) &&
-                "hover:border-secondary hover:from-secondary/20 hover:to-primary/10 cursor-pointer hover:shadow-secondary/30",
-              !canClick(i) && "cursor-not-allowed opacity-50",
-              o.shot &&
-                "from-destructive/30 to-destructive/20 border-destructive/70 shadow-lg shadow-destructive/30 ring-2 ring-destructive/50",
-              o.compassHint && "ring-2 ring-accent/80 animate-pulse shadow-accent/40",
+              "relative w-full h-0 pb-[100%] rounded-md border-2 text-sm transition-colors duration-200 overflow-hidden",
+              "touch-manipulation select-none box-border min-h-[44px] min-w-[44px]",
+              "bg-gradient-to-br from-slate-700 to-slate-800 border-slate-600",
+              isActive && "from-emerald-800/50 to-green-800/50 border-emerald-500/50 shadow-lg shadow-emerald-500/20",
+              canClick(i) && "hover:border-cyan-400 hover:from-cyan-800/30 hover:to-blue-800/30 cursor-pointer",
+              !canClick(i) && "cursor-not-allowed opacity-60",
+              o.shot && "from-red-900/30 to-red-800/30 border-red-500/50 shadow-lg shadow-red-500/20",
+              o.compassHint && "ring-2 ring-amber-400/70 animate-pulse",
               o.binocularsUsed &&
-                "ring-2 ring-accent/80 from-accent/20 to-accent/10 border-accent/70 shadow-lg shadow-accent/40 animate-glow-pulse",
+                "ring-2 ring-yellow-400/80 from-yellow-900/30 to-yellow-800/30 border-yellow-500/50 shadow-lg shadow-yellow-500/30 animate-pulse",
             )}
             aria-disabled={!canClick(i)}
             onTouchStart={(e) => e.preventDefault()}
@@ -75,15 +70,14 @@ export default function GameBoard({ rows, cols, activeCells, overlays, lastShotA
             <div className="absolute inset-0">
               {o.shot && (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-destructive/40 to-destructive/60 shadow-inner ring-2 ring-destructive/70 animate-pulse" />
-                  <div className="absolute text-3xl drop-shadow-lg filter brightness-125">💥</div>
-                  <div className="absolute inset-0 bg-destructive/10 rounded-lg animate-ping"></div>
+                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-red-500/30 to-red-700/30 shadow-inner ring-2 ring-red-400/50 animate-pulse" />
+                  <div className="absolute text-2xl">💥</div>
                 </div>
               )}
 
               {o.revealedEmpty && !o.shot && (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="px-3 py-2 rounded-lg bg-gradient-to-r from-primary to-secondary text-primary-foreground text-xs font-black shadow-lg animate-bounce-in border border-primary/30">
+                  <div className="px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-500 text-white text-xs font-bold shadow-lg animate-bounce-in">
                     ПУСТО
                   </div>
                 </div>
@@ -91,51 +85,37 @@ export default function GameBoard({ rows, cols, activeCells, overlays, lastShotA
 
               {o.binocularsUsed && (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="animate-glow-pulse">
-                    <div className="w-8 h-8 drop-shadow-2xl filter brightness-125">
-                      <GameIcons.Binoculars />
-                    </div>
+                  <div className="animate-pulse">
+                    <div className="text-4xl drop-shadow-lg filter brightness-110">👁</div>
                   </div>
-                  <div className="absolute top-2 right-2 w-6 h-6 bg-gradient-to-br from-accent to-accent/80 rounded-full flex items-center justify-center animate-spin shadow-lg">
-                    <div className="w-4 h-4">
-                      <GameIcons.Crosshair />
-                    </div>
+                  <div className="absolute top-2 right-2 w-6 h-6 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center text-xs font-bold animate-spin">
+                    🔍
                   </div>
-                  <div className="absolute inset-0 bg-accent/10 rounded-lg animate-pulse"></div>
                 </div>
               )}
 
               {o.duck && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="relative">
-                    <div className="w-12 h-12 drop-shadow-2xl animate-float-gentle filter brightness-125">
-                      <GameIcons.Duck />
-                    </div>
-                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-secondary to-primary rounded-full animate-pulse shadow-lg shadow-secondary/60"></div>
-                    <div className="absolute inset-0 rounded-full bg-secondary/20 animate-ping"></div>
-                    <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 to-primary/10 rounded-lg"></div>
+                    <div className="text-5xl drop-shadow-2xl animate-float filter brightness-110">🦆</div>
+                    <div className="absolute -top-2 -right-2 w-4 h-4 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full animate-pulse shadow-lg shadow-green-500/50"></div>
+                    <div className="absolute inset-0 rounded-full bg-green-400/20 animate-ping"></div>
                   </div>
                 </div>
               )}
 
+              {/* Легендарный подсвет "утки" (одноразовый эффект) */}
               {o.eagleEyeDuck && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-12 h-12 drop-shadow-2xl animate-bounce filter brightness-125">
-                    <GameIcons.Duck />
-                  </div>
-                  <div className="absolute inset-0 bg-gradient-to-br from-accent/20 to-secondary/20 rounded-lg animate-pulse"></div>
+                <div className="absolute inset-0 flex items-center justify-center text-4xl drop-shadow-2xl animate-bounce">
+                  🦆
                 </div>
               )}
 
               {o.beaver && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-12 h-12 drop-shadow-2xl animate-float-gentle filter brightness-125">
-                    <GameIcons.Beaver />
-                  </div>
-                  <div className="absolute inset-0 bg-gradient-to-br from-accent/10 to-primary/10 rounded-lg animate-pulse"></div>
+                <div className="absolute inset-0 flex items-center justify-center text-4xl drop-shadow-2xl animate-float">
+                  🦫
                 </div>
               )}
-
               {o.warden && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <Image
@@ -159,12 +139,10 @@ export default function GameBoard({ rows, cols, activeCells, overlays, lastShotA
                 </div>
               )}
 
-              <div className="absolute top-1 left-1 text-xs text-muted-foreground/60 font-mono font-bold bg-background/20 px-1 rounded backdrop-blur-sm">
-                {i + 1}
-              </div>
+              <div className="absolute top-1 left-1 text-xs text-slate-400 font-mono opacity-50">{i + 1}</div>
 
               {canClick(i) && (
-                <div className="absolute inset-0 bg-gradient-to-br from-secondary/0 to-primary/0 hover:from-secondary/20 hover:to-primary/10 transition-all duration-300 rounded-lg"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/0 to-blue-400/0 group-hover:from-cyan-400/20 group-hover:to-blue-400/20 transition-all duration-300 rounded-lg"></div>
               )}
 
               {playShotAnim && <ShotSmoke keyId={lastShotAnim!.id} />}
