@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useEffect } from "react"
-import { Telescope, ArrowLeft, Volume2, VolumeX, Coins } from "lucide-react"
+import { Telescope, ArrowLeft, Volume2, VolumeX, Coins, X } from "lucide-react"
 import GameBoard, { type CellOverlay } from "./game-board"
 import { useSound } from "use-sound"
 import type { PlayerCharacter } from "@/lib/ai-opponent"
@@ -22,6 +22,98 @@ type Props = {
   playerId?: string
 }
 
+function GameResultModal({
+  outcome,
+  lastAction,
+  playerCharacter,
+  onClose,
+  onBackToMenu,
+  onChangeRole,
+}: {
+  outcome: any
+  lastAction: any
+  playerCharacter: PlayerCharacter
+  onClose: () => void
+  onBackToMenu: () => void
+  onChangeRole: () => void
+}) {
+  if (!outcome) return null
+
+  const isWinner =
+    (outcome.winner === "hunter" && playerCharacter === "hunter") ||
+    (outcome.winner === "duck" && playerCharacter === "duck")
+
+  return (
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 animate-fade-in">
+      <div className="bg-card border border-border rounded-xl p-8 max-w-md w-full text-center animate-slide-up">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-secondary hover:bg-secondary/80 flex items-center justify-center transition-colors"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="text-8xl mb-6 animate-bounce">{isWinner ? "🎉" : "😔"}</div>
+
+        <div className={`text-3xl font-bold mb-4 ${isWinner ? "text-green-500" : "text-red-500"}`}>
+          {isWinner ? "ПОБЕДА!" : "ПОРАЖЕНИЕ"}
+        </div>
+
+        <div className="text-xl text-muted-foreground mb-6">
+          {outcome.winner === "hunter" ? "🏹 Охотник победил!" : "🦆 Утка победила!"}
+        </div>
+
+        <div className="text-foreground mb-6">
+          {outcome.reason === "hunter-shot-duck" && "Охотник подстрелил утку!"}
+          {outcome.reason === "hunter-out-of-ammo" && "У охотника закончились патроны!"}
+          {outcome.reason === "duck-hit-beaver" && "Утка попала на бобра!"}
+          {outcome.reason === "duck-hit-warden" && "Утка попала на смотрителя!"}
+          {outcome.reason === "hunter-hit-beaver" && "Охотник подстрелил бобра!"}
+          {outcome.reason === "hunter-hit-warden" && "Охотник подстрелил смотрителя!"}
+        </div>
+
+        {lastAction?.type === "game-ended" && (
+          <div className="mb-6 p-4 bg-secondary rounded-lg">
+            <div className="text-lg font-semibold mb-2">💰 Изменения баланса:</div>
+            <div className="flex justify-between items-center">
+              <span>{playerCharacter === "hunter" ? "Охотник:" : "Утка:"}</span>
+              <span
+                className={`font-bold text-lg ${
+                  (playerCharacter === "hunter" ? lastAction.data.hunterGoldChange : lastAction.data.duckGoldChange) >=
+                  0
+                    ? "text-green-500"
+                    : "text-red-500"
+                }`}
+              >
+                {playerCharacter === "hunter"
+                  ? (lastAction.data.hunterGoldChange >= 0 ? "+" : "") + lastAction.data.hunterGoldChange
+                  : (lastAction.data.duckGoldChange >= 0 ? "+" : "") + lastAction.data.duckGoldChange}
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-3">
+            <button onClick={onClose} className="flex-1 minimal-button-secondary">
+              Продолжить просмотр
+            </button>
+            <button onClick={onBackToMenu} className="flex-1 minimal-button">
+              В меню
+            </button>
+          </div>
+          <button
+            onClick={onChangeRole}
+            className="w-full minimal-button-secondary border-2 border-primary/20 hover:border-primary/40"
+          >
+            🔄 Сменить роль
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function GameSession({
   playerCharacter,
   onBackToMenu,
@@ -34,8 +126,15 @@ export default function GameSession({
   const [lastShotAnim, setLastShotAnim] = useState<{ cell: number; id: number } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showResultModal, setShowResultModal] = useState(false)
 
   const [play] = useSound("/sounds/shot.mp3", { volume: soundEnabled ? 0.5 : 0 })
+
+  useEffect(() => {
+    if (gameState?.outcome && !showResultModal) {
+      setShowResultModal(true)
+    }
+  }, [gameState?.outcome, showResultModal])
 
   const handleCellClick = useCallback(
     async (cellIndex: number) => {
@@ -216,6 +315,11 @@ export default function GameSession({
     [gameState, playerCharacter],
   )
 
+  const handleChangeRole = () => {
+    // Navigate to role selection page
+    window.location.href = "/role-select"
+  }
+
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
@@ -274,6 +378,54 @@ export default function GameSession({
     })
   }
 
+  if (Array.isArray(gameState.beaverCells)) {
+    gameState.beaverCells.forEach((i: number) => {
+      if (typeof i === "number" && overlays[i]) {
+        overlays[i] = { ...overlays[i], beaver: true }
+      }
+    })
+  }
+
+  if (Array.isArray(gameState.wardenCells)) {
+    gameState.wardenCells.forEach((i: number) => {
+      if (typeof i === "number" && overlays[i]) {
+        overlays[i] = { ...overlays[i], warden: true }
+      }
+    })
+  }
+
+  if (gameState.outcome && gameState.outcome.reason === "duck-hit-beaver" && typeof gameState.beaverCell === "number") {
+    if (overlays[gameState.beaverCell]) {
+      overlays[gameState.beaverCell] = { ...overlays[gameState.beaverCell], beaver: true }
+    }
+  }
+
+  if (
+    gameState.outcome &&
+    gameState.outcome.reason === "hunter-hit-beaver" &&
+    typeof gameState.beaverCell === "number"
+  ) {
+    if (overlays[gameState.beaverCell]) {
+      overlays[gameState.beaverCell] = { ...overlays[gameState.beaverCell], beaver: true }
+    }
+  }
+
+  if (gameState.outcome && gameState.outcome.reason === "duck-hit-warden" && typeof gameState.wardenCell === "number") {
+    if (overlays[gameState.wardenCell]) {
+      overlays[gameState.wardenCell] = { ...overlays[gameState.wardenCell], warden: true }
+    }
+  }
+
+  if (
+    gameState.outcome &&
+    gameState.outcome.reason === "hunter-hit-warden" &&
+    typeof gameState.wardenCell === "number"
+  ) {
+    if (overlays[gameState.wardenCell]) {
+      overlays[gameState.wardenCell] = { ...overlays[gameState.wardenCell], warden: true }
+    }
+  }
+
   if (
     typeof gameState.duckCell === "number" &&
     gameState.duckCell >= 0 &&
@@ -298,6 +450,17 @@ export default function GameSession({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 relative">
+      {showResultModal && gameState?.outcome && (
+        <GameResultModal
+          outcome={gameState.outcome}
+          lastAction={gameState.lastAction}
+          playerCharacter={playerCharacter}
+          onClose={() => setShowResultModal(false)}
+          onBackToMenu={onBackToMenu}
+          onChangeRole={handleChangeRole}
+        />
+      )}
+
       <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width%3D%2260%22 height%3D%2260%22 viewBox%3D%220 0 60 60%22 xmlns%3D%22http://www.w3.org/2000/svg%22%3E%3Cg fill%3D%22none%22 fillRule%3D%22evenodd%22%3E%3Cg fill%3D%22%239C92AC%22 fillOpacity%3D%220.1%22%3E%3Ccircle cx%3D%2230%22 cy%3D%2230%22 r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
 
       <div className="max-w-6xl mx-auto relative z-10">

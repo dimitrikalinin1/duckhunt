@@ -5,24 +5,24 @@
 
 :root {
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --foreground: oklch(0.08 0 0); /* Darker text for better contrast */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.08 0 0); /* Darker card text */
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.08 0 0); /* Darker popover text */
+  --primary: oklch(0.15 0 0); /* Darker primary for better contrast */
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.94 0 0); /* Slightly darker secondary background */
+  --secondary-foreground: oklch(0.08 0 0); /* Darker secondary text */
+  --muted: oklch(0.94 0 0); /* Slightly darker muted background */
+  --muted-foreground: oklch(0.35 0 0); /* Much darker muted text for readability */
+  --accent: oklch(0.94 0 0); /* Slightly darker accent background */
+  --accent-foreground: oklch(0.08 0 0); /* Darker accent text */
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --destructive-foreground: oklch(0.985 0 0); /* White text on destructive background */
+  --border: oklch(0.85 0 0); /* Darker borders for better definition */
+  --input: oklch(0.85 0 0); /* Darker input borders */
+  --ring: oklch(0.5 0 0); /* Darker focus ring */
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -129,15 +129,15 @@
 }
 
 .minimal-button {
-  @apply bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity;
+  @apply bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-semibold hover:opacity-90 transition-opacity border border-primary/20;
 }
 
 .minimal-button-secondary {
-  @apply bg-secondary text-secondary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-secondary/80 transition-colors;
+  @apply bg-secondary text-secondary-foreground px-4 py-2 rounded-md text-sm font-semibold hover:bg-secondary/80 transition-colors border border-border;
 }
 
 .minimal-input {
-  @apply bg-background border border-input rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent;
+  @apply bg-background border-2 border-input rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent;
 }
 
 /* Essential game animations only */
@@ -171,19 +171,19 @@
 
 /* Game-specific minimal styles */
 .game-cell {
-  @apply w-16 h-16 border border-border rounded-md flex items-center justify-center text-lg cursor-pointer hover:bg-accent transition-colors;
+  @apply w-16 h-16 border-2 border-border rounded-md flex items-center justify-center text-lg font-semibold cursor-pointer hover:bg-accent transition-colors;
 }
 
 .game-cell-active {
-  @apply bg-primary text-primary-foreground;
+  @apply bg-primary text-primary-foreground border-primary;
 }
 
 .game-cell-shot {
-  @apply bg-destructive/10 border-destructive/30;
+  @apply bg-destructive/20 border-destructive/50 text-destructive-foreground;
 }
 
 .game-cell-duck {
-  @apply bg-accent border-primary;
+  @apply bg-accent border-primary border-2 text-primary;
 }
 
 /* Existing essential game animations preserved */

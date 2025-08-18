@@ -25,6 +25,10 @@ export default function CharacterPage() {
     router.push(`/multiplayer?role=${role}`)
   }
 
+  const handleChangeRole = () => {
+    router.push("/role-select")
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -86,9 +90,14 @@ export default function CharacterPage() {
               <h1 className="text-2xl font-bold capitalize">{role === "hunter" ? "Охотник" : "Утка"}</h1>
               <p className="text-sm text-muted-foreground">{player.username}</p>
             </div>
-            <Button onClick={handleStartGame} className="minimal-button">
-              Играть
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleChangeRole} variant="outline" className="minimal-button-secondary bg-transparent">
+                🔄
+              </Button>
+              <Button onClick={handleStartGame} className="minimal-button">
+                Играть
+              </Button>
+            </div>
           </div>
 
           {/* Character Overview */}
@@ -308,9 +317,12 @@ export default function CharacterPage() {
           </div>
 
           {/* Action Button */}
-          <div className="text-center">
+          <div className="text-center space-y-3">
             <Button onClick={handleStartGame} className="minimal-button text-lg px-8 py-3">
               Начать поиск игры
+            </Button>
+            <Button onClick={handleChangeRole} variant="outline" className="minimal-button-secondary bg-transparent">
+              🔄 Сменить роль
             </Button>
           </div>
         </div>
