@@ -1,7 +1,6 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -39,7 +38,8 @@ export default function RoleSelectPage() {
       level: player?.hunter_level || 1,
       experience: player?.hunter_experience || 0,
       emoji: "🏹",
-      gradient: "from-orange-500 to-red-500",
+      color: "text-orange-400",
+      bgGlow: "from-orange-500/20 to-red-500/20",
     },
     {
       id: "duck",
@@ -48,118 +48,117 @@ export default function RoleSelectPage() {
       level: player?.duck_level || 1,
       experience: player?.duck_experience || 0,
       emoji: "🦆",
-      gradient: "from-blue-500 to-cyan-500",
+      color: "text-cyan-400",
+      bgGlow: "from-blue-500/20 to-cyan-500/20",
     },
   ]
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="container mx-auto max-w-2xl">
+    <div className="min-h-screen bg-background p-4 overflow-hidden">
+      <div className="container mx-auto max-w-6xl">
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <Button onClick={handleBack} variant="outline" size="sm">
+          <div className="flex items-center justify-between max-w-full">
+            <Button onClick={handleBack} variant="outline" size="sm" className="flex-shrink-0 bg-transparent">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Назад
             </Button>
-            <h1 className="text-2xl font-bold">Выбор роли</h1>
-            <div className="w-16"></div>
+            <h1 className="text-2xl font-bold text-center flex-1 px-4 truncate">Выбор роли</h1>
+            <div className="w-16 flex-shrink-0"></div>
           </div>
 
-          <div className="space-y-4">
-            {roles.map((role, index) => {
-              const Icon = role.icon
-              const progressPercent = role.experience % 100
+          <div className="space-y-6">
+            <div className="role-scroll-container px-2">
+              {roles.map((role, index) => {
+                const Icon = role.icon
+                const progressPercent = role.experience % 100
 
-              return (
-                <div
-                  key={role.id}
-                  className="animate-slide-up opacity-0"
-                  style={{
-                    animationDelay: `${index * 0.2}s`,
-                    animationFillMode: "forwards",
-                  }}
-                >
-                  <Card
-                    className="group cursor-pointer border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] bg-card/50 backdrop-blur-sm"
-                    onClick={() => handleRoleSelect(role.id as "hunter" | "duck")}
+                return (
+                  <div
+                    key={role.id}
+                    className="role-scroll-item animate-slide-up opacity-0"
+                    style={{
+                      animationDelay: `${index * 0.2}s`,
+                      animationFillMode: "forwards",
+                    }}
                   >
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-4">
-                        <div className="relative">
-                          <div
-                            className={`absolute inset-0 bg-gradient-to-r ${role.gradient} rounded-full blur opacity-0 group-hover:opacity-30 transition-opacity duration-300`}
-                          ></div>
-                          <div
-                            className={`relative p-3 rounded-full bg-gradient-to-r ${role.gradient} group-hover:scale-110 transition-transform duration-300`}
-                          >
-                            <Icon className="h-6 w-6 text-white" />
+                    <div className="role-card animate-float-gentle">
+                      <div
+                        className={`absolute inset-0 bg-gradient-to-br ${role.bgGlow} rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+                      ></div>
+
+                      <div className="relative space-y-6">
+                        <div className="text-center space-y-4">
+                          <div className="relative inline-block">
+                            <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl group-hover:bg-primary/40 transition-all duration-300"></div>
+                            <div className="relative p-6 rounded-full bg-gradient-to-br from-card to-muted border-2 border-primary/30 group-hover:border-primary/60 transition-all duration-300">
+                              <Icon
+                                className={`h-12 w-12 ${role.color} group-hover:scale-110 transition-transform duration-300`}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-center gap-3">
+                              <span className="text-4xl group-hover:animate-bounce">{role.emoji}</span>
+                              <h3 className="text-2xl font-bold">{role.name}</h3>
+                            </div>
+                            <Badge variant="secondary" className="text-sm px-3 py-1">
+                              Уровень {role.level}
+                            </Badge>
                           </div>
                         </div>
 
-                        <div className="flex-1 space-y-2">
-                          <div className="flex items-center gap-3">
-                            <span className="text-2xl group-hover:animate-bounce">{role.emoji}</span>
-                            <h3 className="text-xl font-bold">{role.name}</h3>
-                            <Badge variant="secondary" className="text-xs">
-                              Ур. {role.level}
-                            </Badge>
+                        <div className="space-y-3">
+                          <div className="flex justify-between text-sm text-muted-foreground">
+                            <span>Опыт до следующего уровня</span>
+                            <span className="font-mono">{progressPercent}/100</span>
                           </div>
-
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-xs text-muted-foreground">
-                              <span>Опыт</span>
-                              <span>{progressPercent}/100</span>
-                            </div>
-                            <Progress value={progressPercent} className="h-2" />
-                          </div>
+                          <Progress value={progressPercent} className="h-3 bg-muted/50" />
                         </div>
 
                         <Button
-                          className={`bg-gradient-to-r ${role.gradient} hover:shadow-md transition-all duration-300 group-hover:scale-105`}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleRoleSelect(role.id as "hunter" | "duck")
-                          }}
+                          onClick={() => handleRoleSelect(role.id as "hunter" | "duck")}
+                          className="game-button w-full animate-glow-pulse"
+                          size="lg"
                         >
-                          Играть
+                          <Icon className="h-5 w-5 mr-2" />
+                          Играть за {role.name}
                         </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              )
-            })}
-          </div>
-
-          <Card className="border border-primary/20 bg-card/30 backdrop-blur-sm">
-            <CardContent className="p-4">
-              <h4 className="font-semibold mb-3 text-center">Основы игры</h4>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 font-medium">
-                    <Target className="h-4 w-4 text-orange-500" />
-                    Охотник
+                    </div>
                   </div>
-                  <ul className="space-y-1 text-xs text-muted-foreground ml-6">
+                )
+              })}
+            </div>
+
+            <div className="game-panel max-w-2xl mx-auto">
+              <h4 className="font-bold mb-4 text-center text-lg">Правила игры</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 font-semibold">
+                    <Target className="h-5 w-5 text-orange-400" />
+                    <span>Охотник</span>
+                  </div>
+                  <ul className="space-y-2 text-muted-foreground ml-8">
                     <li>• Найди и поймай утку</li>
-                    <li>• Используй бинокль</li>
-                    <li>• Ограниченные выстрелы</li>
+                    <li>• Используй бинокль для поиска</li>
+                    <li>• Ограниченное количество выстрелов</li>
                   </ul>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 font-medium">
-                    <Feather className="h-4 w-4 text-blue-500" />
-                    Утка
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 font-semibold">
+                    <Feather className="h-5 w-5 text-cyan-400" />
+                    <span>Утка</span>
                   </div>
-                  <ul className="space-y-1 text-xs text-muted-foreground ml-6">
+                  <ul className="space-y-2 text-muted-foreground ml-8">
                     <li>• Скрывайся от охотника</li>
-                    <li>• Избегай выстрелов</li>
-                    <li>• Используй перки</li>
+                    <li>• Избегай попадания выстрелов</li>
+                    <li>• Используй способности для защиты</li>
                   </ul>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>

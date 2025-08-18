@@ -4,76 +4,76 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Changed to black-based color scheme for entire app */
-  --background: oklch(0.08 0 0); /* Deep black background */
-  --foreground: oklch(0.95 0 0); /* Light text */
-  --card: oklch(0.12 0 0); /* Slightly lighter black for cards */
-  --card-foreground: oklch(0.95 0 0);
-  --popover: oklch(0.12 0 0);
-  --popover-foreground: oklch(0.95 0 0);
-  --primary: oklch(0.7 0.15 240); /* Blue accent for primary */
-  --primary-foreground: oklch(0.08 0 0);
-  --secondary: oklch(0.18 0 0); /* Dark gray for secondary */
-  --secondary-foreground: oklch(0.85 0 0);
-  --muted: oklch(0.15 0 0);
-  --muted-foreground: oklch(0.6 0 0);
-  --accent: oklch(0.2 0 0);
-  --accent-foreground: oklch(0.9 0 0);
-  --destructive: oklch(0.6 0.2 25);
-  --destructive-foreground: oklch(0.95 0 0);
-  --border: oklch(0.25 0 0); /* Subtle borders */
-  --input: oklch(0.2 0 0);
-  --ring: oklch(0.7 0.15 240);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.1 0 0);
-  --sidebar-foreground: oklch(0.9 0 0);
-  --sidebar-primary: oklch(0.7 0.15 240);
-  --sidebar-primary-foreground: oklch(0.08 0 0);
-  --sidebar-accent: oklch(0.18 0 0);
-  --sidebar-accent-foreground: oklch(0.9 0 0);
-  --sidebar-border: oklch(0.25 0 0);
-  --sidebar-ring: oklch(0.7 0.15 240);
+  /* Updated to game UI color scheme with emerald accents */
+  --background: #000000; /* Black Theme */
+  --foreground: #ffffff; /* White for text */
+  --card: #1c1c1e; /* Dark gray for panels */
+  --card-foreground: #f1f5f9; /* Light gray for card text */
+  --popover: #1c1c1e; /* Dark gray for popovers */
+  --popover-foreground: #ffffff; /* White for popover text */
+  --primary: #059669; /* Primary buttons - emerald */
+  --primary-foreground: #ffffff; /* White text on primary buttons */
+  --secondary: #10b981; /* Accent buttons - bright emerald */
+  --secondary-foreground: #ffffff; /* White text on secondary buttons */
+  --muted: #1c1c1e; /* Muted elements */
+  --muted-foreground: #f1f5f9; /* Light gray for muted text */
+  --accent: #10b981; /* Accent color for highlights */
+  --accent-foreground: #000000; /* Black text on accent backgrounds */
+  --destructive: #ff4d4d; /* Red for destructive actions */
+  --destructive-foreground: #ffffff; /* White for destructive text */
+  --border: #475569; /* Neutral border color */
+  --input: #1c1c1e; /* Input fields */
+  --ring: #10b981; /* Focus ring color */
+  --chart-1: #059669; /* Chart color 1 */
+  --chart-2: #10b981; /* Chart color 2 */
+  --chart-3: #4b5563; /* Chart color 3 */
+  --chart-4: #ffffff; /* Chart color 4 */
+  --chart-5: #f1f5f9; /* Chart color 5 */
+  --radius: 0.5rem; /* Rounded corners */
+  --sidebar: #1c1c1e; /* Sidebar background */
+  --sidebar-foreground: #ffffff; /* Sidebar text color */
+  --sidebar-primary: #059669; /* Sidebar primary color */
+  --sidebar-primary-foreground: #ffffff; /* Sidebar primary text */
+  --sidebar-accent: #10b981; /* Sidebar accent color */
+  --sidebar-accent-foreground: #000000; /* Sidebar accent text */
+  --sidebar-border: #475569; /* Sidebar border color */
+  --sidebar-ring: #10b981; /* Sidebar focus ring */
 }
 
 .dark {
-  /* Dark mode now uses even deeper blacks */
-  --background: oklch(0.05 0 0); /* Even deeper black */
-  --foreground: oklch(0.98 0 0);
-  --card: oklch(0.08 0 0);
-  --card-foreground: oklch(0.98 0 0);
-  --popover: oklch(0.08 0 0);
-  --popover-foreground: oklch(0.98 0 0);
-  --primary: oklch(0.75 0.15 240);
-  --primary-foreground: oklch(0.05 0 0);
-  --secondary: oklch(0.15 0 0);
-  --secondary-foreground: oklch(0.9 0 0);
-  --muted: oklch(0.12 0 0);
-  --muted-foreground: oklch(0.65 0 0);
-  --accent: oklch(0.18 0 0);
-  --accent-foreground: oklch(0.95 0 0);
-  --destructive: oklch(0.65 0.2 25);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.2 0 0);
-  --input: oklch(0.15 0 0);
-  --ring: oklch(0.75 0.15 240);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.05 0 0);
-  --sidebar-foreground: oklch(0.95 0 0);
-  --sidebar-primary: oklch(0.75 0.15 240);
-  --sidebar-primary-foreground: oklch(0.05 0 0);
-  --sidebar-accent: oklch(0.15 0 0);
-  --sidebar-accent-foreground: oklch(0.95 0 0);
-  --sidebar-border: oklch(0.2 0 0);
-  --sidebar-ring: oklch(0.75 0.15 240);
+  /* Updated dark mode to match game UI theme */
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #1c1c1e;
+  --card-foreground: #f1f5f9;
+  --popover: #1c1c1e;
+  --popover-foreground: #ffffff;
+  --primary: #059669;
+  --primary-foreground: #ffffff;
+  --secondary: #10b981;
+  --secondary-foreground: #ffffff;
+  --muted: #1c1c1e;
+  --muted-foreground: #f1f5f9;
+  --accent: #10b981;
+  --accent-foreground: #000000;
+  --destructive: #ff4d4d;
+  --destructive-foreground: #ffffff;
+  --border: #475569;
+  --input: #1c1c1e;
+  --ring: #10b981;
+  --chart-1: #059669;
+  --chart-2: #10b981;
+  --chart-3: #4b5563;
+  --chart-4: #ffffff;
+  --chart-5: #f1f5f9;
+  --sidebar: #1c1c1e;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #059669;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #10b981;
+  --sidebar-accent-foreground: #000000;
+  --sidebar-border: #475569;
+  --sidebar-ring: #10b981;
 }
 
 @theme inline {
@@ -121,22 +121,21 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* removed padding-top: 150px to restore original interface positioning */
-    background-color: oklch(0.08 0 0) !important;
-    color: oklch(0.95 0 0) !important;
+    /* Updated to use semantic tokens */
+    font-family: "Work Sans", "Open Sans", system-ui, sans-serif;
   }
 
-  /* Removed @apply dark; which was causing the unknown utility class error */
   html {
-    background-color: oklch(0.08 0 0) !important;
+    /* Updated to use semantic background token */
+    background-color: var(--background);
   }
 }
 
 /* Simplified minimal design system */
 .minimal-card {
   @apply bg-card border border-border rounded-lg p-4 shadow-lg;
-  background-color: oklch(0.12 0 0) !important;
-  border-color: oklch(0.25 0 0) !important;
+  background-color: #1c1c1e !important;
+  border-color: #475569 !important;
 }
 
 .minimal-button {
@@ -145,14 +144,14 @@
 
 .minimal-button-secondary {
   @apply bg-secondary text-secondary-foreground px-4 py-2 rounded-md text-sm font-semibold hover:bg-secondary/80 transition-colors border border-border;
-  background-color: oklch(0.18 0 0) !important;
-  color: oklch(0.85 0 0) !important;
+  background-color: #10b981 !important;
+  color: #ffffff !important;
 }
 
 .minimal-input {
   @apply bg-background border-2 border-input rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent;
-  background-color: oklch(0.15 0 0) !important;
-  color: oklch(0.95 0 0) !important;
+  background-color: #1c1c1e !important;
+  color: #ffffff !important;
 }
 
 /* Essential game animations only */
@@ -187,9 +186,9 @@
 /* Game-specific minimal styles */
 .game-cell {
   @apply w-16 h-16 border-2 border-border rounded-md flex items-center justify-center text-lg font-semibold cursor-pointer hover:bg-accent transition-colors;
-  background-color: oklch(0.12 0 0) !important;
-  border-color: oklch(0.25 0 0) !important;
-  color: oklch(0.9 0 0) !important;
+  background-color: #1c1c1e !important;
+  border-color: #475569 !important;
+  color: #059669 !important;
 }
 
 .game-cell-active {
@@ -259,4 +258,108 @@
     rgba(200, 200, 200, 0) 70%
   );
   animation: smokePuff 900ms ease-out forwards;
+}
+
+/* Game-specific UI components with emerald theme and better constraints */
+.game-button {
+  @apply bg-primary text-primary-foreground px-6 py-3 rounded-lg text-base font-bold hover:bg-primary/90 transition-all duration-200 border-2 border-primary/20 shadow-lg hover:shadow-xl transform hover:scale-105 max-w-full;
+}
+
+.game-button-secondary {
+  @apply bg-secondary text-secondary-foreground px-6 py-3 rounded-lg text-base font-bold hover:bg-secondary/90 transition-all duration-200 border-2 border-secondary/20 shadow-lg hover:shadow-xl transform hover:scale-105 max-w-full;
+}
+
+/* Fixed game-card class by removing @apply and using pure CSS */
+.game-card {
+  background: linear-gradient(135deg, var(--card) 0%, rgba(28, 28, 30, 0.8) 100%);
+  border: 2px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(4px);
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.game-panel {
+  background: linear-gradient(135deg, var(--card) 0%, rgba(28, 28, 30, 0.8) 100%);
+  border: 2px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(4px);
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.role-card {
+  background: linear-gradient(135deg, var(--card) 0%, rgba(28, 28, 30, 0.8) 100%);
+  border: 2px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(4px);
+  max-width: 100%;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.role-card:hover {
+  border-color: rgba(5, 150, 105, 0.5);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  transform: scale(1.02);
+}
+
+.role-scroll-container {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.role-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+.role-scroll-item {
+  /* Fixed concatenated classes by adding proper space between max-w-[90vw] and snap-center */
+  flex-shrink: 0;
+  width: 320px;
+  max-width: 90vw;
+  scroll-snap-align: center;
+}
+
+/* Game-specific animations with emerald theme */
+@keyframes glow-pulse {
+  /* Fixed CSS syntax by removing backslashes */
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.6);
+  }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes float-gentle {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-float-gentle {
+  animation: float-gentle 3s ease-in-out infinite;
 }
