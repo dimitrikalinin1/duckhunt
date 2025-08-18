@@ -20,6 +20,25 @@ export interface InventoryItem {
   created_at: string
 }
 
+export interface GameHistoryData {
+  id: string
+  session_id: string
+  hunter_player_id: string
+  duck_player_id: string
+  hunter_username: string
+  duck_username: string
+  winner: "hunter" | "duck"
+  reason: string
+  duration_seconds: number
+  hunter_shots: number
+  duck_moves: number
+  hunter_bet_amount: number
+  duck_bet_amount: number
+  hunter_coins_change: number
+  duck_coins_change: number
+  created_at: string
+}
+
 export async function getPlayersForAdmin(): Promise<AdminPlayerData[]> {
   try {
     const supabase = createClient()
@@ -326,4 +345,93 @@ export async function updatePlayerExperience(
     console.error("Error in updatePlayerExperience:", error)
     return false
   }
+}
+
+export async function getGameHistoryForAdmin(): Promise<GameHistoryData[]> {
+  try {
+    const supabase = createClient()
+
+    if (!supabase) {
+      console.warn("Supabase client not available, returning mock game history")
+      return getMockGameHistoryData()
+    }
+
+    const { data, error } = await supabase
+      .from("game_history")
+      .select(`
+        *,
+        hunter_player:players!hunter_player_id(username),
+        duck_player:players!duck_player_id(username)
+      `)
+      .order("created_at", { ascending: false })
+      .limit(100)
+
+    if (error) {
+      console.error("Error fetching game history:", error)
+      return getMockGameHistoryData()
+    }
+
+    return (data || []).map((game) => ({
+      id: game.id,
+      session_id: game.session_id,
+      hunter_player_id: game.hunter_player_id,
+      duck_player_id: game.duck_player_id,
+      hunter_username: game.hunter_player?.username || "Unknown",
+      duck_username: game.duck_player?.username || "Unknown",
+      winner: game.winner,
+      reason: game.reason,
+      duration_seconds: game.duration_seconds || 0,
+      hunter_shots: game.hunter_shots || 0,
+      duck_moves: game.duck_moves || 0,
+      hunter_bet_amount: game.hunter_bet_amount || 0,
+      duck_bet_amount: game.duck_bet_amount || 0,
+      hunter_coins_change: game.hunter_coins_change || 0,
+      duck_coins_change: game.duck_coins_change || 0,
+      created_at: game.created_at,
+    }))
+  } catch (error) {
+    console.error("Error in getGameHistoryForAdmin:", error)
+    return getMockGameHistoryData()
+  }
+}
+
+function getMockGameHistoryData(): GameHistoryData[] {
+  return [
+    {
+      id: "game-1",
+      session_id: "session-123",
+      hunter_player_id: "mock-1",
+      duck_player_id: "mock-2",
+      hunter_username: "TestPlayer1",
+      duck_username: "TestPlayer2",
+      winner: "hunter",
+      reason: "duck-shot",
+      duration_seconds: 180,
+      hunter_shots: 3,
+      duck_moves: 8,
+      hunter_bet_amount: 10,
+      duck_bet_amount: 10,
+      hunter_coins_change: 15,
+      duck_coins_change: -10,
+      created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "game-2",
+      session_id: "session-124",
+      hunter_player_id: "mock-2",
+      duck_player_id: "mock-3",
+      hunter_username: "TestPlayer2",
+      duck_username: "TestPlayer3",
+      winner: "duck",
+      reason: "hunter-out-of-ammo",
+      duration_seconds: 240,
+      hunter_shots: 5,
+      duck_moves: 12,
+      hunter_bet_amount: 20,
+      duck_bet_amount: 20,
+      hunter_coins_change: -20,
+      duck_coins_change: 30,
+      created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+    },
+  ]
 }

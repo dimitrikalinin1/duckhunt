@@ -14,6 +14,8 @@ import {
   updatePlayerExperience,
   calculateLevelFromExperience,
   calculateExperienceFromLevel,
+  getGameHistoryForAdmin,
+  type GameHistoryData,
 } from "@/lib/admin-service"
 
 interface PlayerData {
@@ -37,7 +39,10 @@ interface InventoryItem {
 
 export default function AdminDashboard() {
   const [players, setPlayers] = useState<PlayerData[]>([])
+  const [gameHistory, setGameHistory] = useState<GameHistoryData[]>([])
+  const [activeTab, setActiveTab] = useState<"players" | "games">("players")
   const [loading, setLoading] = useState(true)
+  const [gameHistoryLoading, setGameHistoryLoading] = useState(false)
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerData | null>(null)
   const [playerInventory, setPlayerInventory] = useState<InventoryItem[]>([])
   const [inventoryLoading, setInventoryLoading] = useState(false)
@@ -64,6 +69,25 @@ export default function AdminDashboard() {
       console.error("Error loading players:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadGameHistory = async () => {
+    setGameHistoryLoading(true)
+    try {
+      const historyData = await getGameHistoryForAdmin()
+      setGameHistory(historyData)
+    } catch (error) {
+      console.error("Error loading game history:", error)
+    } finally {
+      setGameHistoryLoading(false)
+    }
+  }
+
+  const handleTabChange = (tab: "players" | "games") => {
+    setActiveTab(tab)
+    if (tab === "games" && gameHistory.length === 0) {
+      loadGameHistory()
     }
   }
 
@@ -182,6 +206,26 @@ export default function AdminDashboard() {
     return itemNames[itemType] || itemType
   }
 
+  const formatDuration = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = seconds % 60
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
+  }
+
+  const getWinnerBadgeVariant = (winner: string) => {
+    return winner === "hunter" ? "default" : "secondary"
+  }
+
+  const getReasonText = (reason: string) => {
+    const reasons: Record<string, string> = {
+      "duck-shot": "Утка подстрелена",
+      "hunter-out-of-ammo": "У охотника закончились патроны",
+      "duck-escaped": "Утка сбежала",
+      "time-up": "Время вышло",
+    }
+    return reasons[reason] || reason
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -207,6 +251,24 @@ export default function AdminDashboard() {
           </Button>
         </div>
 
+        {/* Tab Navigation */}
+        <div className="flex space-x-1 mb-6">
+          <Button
+            onClick={() => handleTabChange("players")}
+            variant={activeTab === "players" ? "default" : "outline"}
+            className="minimal-button"
+          >
+            Игроки
+          </Button>
+          <Button
+            onClick={() => handleTabChange("games")}
+            variant={activeTab === "games" ? "default" : "outline"}
+            className="minimal-button"
+          >
+            История игр
+          </Button>
+        </div>
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Card className="minimal-card">
@@ -219,68 +281,163 @@ export default function AdminDashboard() {
           </Card>
           <Card className="minimal-card">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Активных игроков</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {activeTab === "players" ? "Активных игроков" : "Всего игр"}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {players.filter((p) => new Date(p.last_played) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length}
+                {activeTab === "players"
+                  ? players.filter((p) => new Date(p.last_played) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
+                      .length
+                  : gameHistory.length}
               </div>
             </CardContent>
           </Card>
           <Card className="minimal-card">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Общий баланс</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {activeTab === "players" ? "Общий баланс" : "Побед охотников"}
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{players.reduce((sum, p) => sum + p.coins, 0)}</div>
+              <div className="text-2xl font-bold">
+                {activeTab === "players"
+                  ? players.reduce((sum, p) => sum + p.coins, 0)
+                  : gameHistory.filter((g) => g.winner === "hunter").length}
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Players List */}
-        <Card className="minimal-card">
-          <CardHeader>
-            <CardTitle>Список игроков</CardTitle>
-            <CardDescription>Все зарегистрированные игроки и их статистика</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {players.map((player) => (
-                <div
-                  key={player.id}
-                  className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-accent/50 cursor-pointer transition-colors"
-                  onClick={() => handlePlayerClick(player)}
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium">{player.username.charAt(0).toUpperCase()}</span>
+        {/* Conditional Rendering for Players and Games Tabs */}
+        {activeTab === "players" ? (
+          /* Players List */
+          <Card className="minimal-card">
+            <CardHeader>
+              <CardTitle>Список игроков</CardTitle>
+              <CardDescription>Все зарегистрированные игроки и их статистика</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {players.map((player) => (
+                  <div
+                    key={player.id}
+                    className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-accent/50 cursor-pointer transition-colors"
+                    onClick={() => handlePlayerClick(player)}
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-medium">{player.username.charAt(0).toUpperCase()}</span>
+                      </div>
+                      <div>
+                        <div className="font-medium">{player.username}</div>
+                        <div className="text-sm text-muted-foreground">ID: {player.telegram_id}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-medium">{player.username}</div>
-                      <div className="text-sm text-muted-foreground">ID: {player.telegram_id}</div>
+                    <div className="flex items-center space-x-4">
+                      <div className="text-right">
+                        <div className="font-medium">{player.coins} монет</div>
+                        <div className="text-sm text-muted-foreground">Уровень {getPlayerLevel(player)}</div>
+                      </div>
+                      <Badge variant="secondary">
+                        {new Date(player.last_played) > new Date(Date.now() - 24 * 60 * 60 * 1000)
+                          ? "Активен"
+                          : "Неактивен"}
+                      </Badge>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right">
-                      <div className="font-medium">{player.coins} монет</div>
-                      <div className="text-sm text-muted-foreground">Уровень {getPlayerLevel(player)}</div>
-                    </div>
-                    <Badge variant="secondary">
-                      {new Date(player.last_played) > new Date(Date.now() - 24 * 60 * 60 * 1000)
-                        ? "Активен"
-                        : "Неактивен"}
-                    </Badge>
+                ))}
+                {players.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>Игроки не найдены</p>
                   </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          /* Game History Section */
+          <Card className="minimal-card">
+            <CardHeader>
+              <CardTitle>История игр</CardTitle>
+              <CardDescription>Все завершенные игры со ставками и результатами</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {gameHistoryLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-4"></div>
+                  <p className="text-muted-foreground">Загрузка истории игр...</p>
                 </div>
-              ))}
-              {players.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>Игроки не найдены</p>
+              ) : (
+                <div className="space-y-4">
+                  {gameHistory.map((game) => (
+                    <div
+                      key={game.id}
+                      className="p-4 border border-border rounded-lg hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <Badge variant={getWinnerBadgeVariant(game.winner)}>
+                            {game.winner === "hunter" ? "🏹 Охотник" : "🦆 Утка"} победил
+                          </Badge>
+                          <span className="text-sm text-muted-foreground">{formatDate(game.created_at)}</span>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Длительность: {formatDuration(game.duration_seconds)}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium">🏹 {game.hunter_username}</span>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm">Ставка: {game.hunter_bet_amount}</span>
+                              <span
+                                className={`text-sm font-medium ${game.hunter_coins_change >= 0 ? "text-green-600" : "text-red-600"}`}
+                              >
+                                {game.hunter_coins_change >= 0 ? "+" : ""}
+                                {game.hunter_coins_change}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-xs text-muted-foreground">Выстрелов: {game.hunter_shots}</div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium">🦆 {game.duck_username}</span>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm">Ставка: {game.duck_bet_amount}</span>
+                              <span
+                                className={`text-sm font-medium ${game.duck_coins_change >= 0 ? "text-green-600" : "text-red-600"}`}
+                              >
+                                {game.duck_coins_change >= 0 ? "+" : ""}
+                                {game.duck_coins_change}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-xs text-muted-foreground">Ходов: {game.duck_moves}</div>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Причина: {getReasonText(game.reason)}</span>
+                        <span className="text-xs text-muted-foreground font-mono">ID: {game.session_id}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {gameHistory.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>История игр пуста</p>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Player Details Modal */}
         {selectedPlayer && (
