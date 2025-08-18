@@ -4,74 +4,76 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.08 0 0); /* Darker text for better contrast */
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.08 0 0); /* Darker card text */
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.08 0 0); /* Darker popover text */
-  --primary: oklch(0.15 0 0); /* Darker primary for better contrast */
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.94 0 0); /* Slightly darker secondary background */
-  --secondary-foreground: oklch(0.08 0 0); /* Darker secondary text */
-  --muted: oklch(0.94 0 0); /* Slightly darker muted background */
-  --muted-foreground: oklch(0.35 0 0); /* Much darker muted text for readability */
-  --accent: oklch(0.94 0 0); /* Slightly darker accent background */
-  --accent-foreground: oklch(0.08 0 0); /* Darker accent text */
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0); /* White text on destructive background */
-  --border: oklch(0.85 0 0); /* Darker borders for better definition */
-  --input: oklch(0.85 0 0); /* Darker input borders */
-  --ring: oklch(0.5 0 0); /* Darker focus ring */
+  /* Changed to black-based color scheme for entire app */
+  --background: oklch(0.08 0 0); /* Deep black background */
+  --foreground: oklch(0.95 0 0); /* Light text */
+  --card: oklch(0.12 0 0); /* Slightly lighter black for cards */
+  --card-foreground: oklch(0.95 0 0);
+  --popover: oklch(0.12 0 0);
+  --popover-foreground: oklch(0.95 0 0);
+  --primary: oklch(0.7 0.15 240); /* Blue accent for primary */
+  --primary-foreground: oklch(0.08 0 0);
+  --secondary: oklch(0.18 0 0); /* Dark gray for secondary */
+  --secondary-foreground: oklch(0.85 0 0);
+  --muted: oklch(0.15 0 0);
+  --muted-foreground: oklch(0.6 0 0);
+  --accent: oklch(0.2 0 0);
+  --accent-foreground: oklch(0.9 0 0);
+  --destructive: oklch(0.6 0.2 25);
+  --destructive-foreground: oklch(0.95 0 0);
+  --border: oklch(0.25 0 0); /* Subtle borders */
+  --input: oklch(0.2 0 0);
+  --ring: oklch(0.7 0.15 240);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: oklch(0.1 0 0);
+  --sidebar-foreground: oklch(0.9 0 0);
+  --sidebar-primary: oklch(0.7 0.15 240);
+  --sidebar-primary-foreground: oklch(0.08 0 0);
+  --sidebar-accent: oklch(0.18 0 0);
+  --sidebar-accent-foreground: oklch(0.9 0 0);
+  --sidebar-border: oklch(0.25 0 0);
+  --sidebar-ring: oklch(0.7 0.15 240);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
+  /* Dark mode now uses even deeper blacks */
+  --background: oklch(0.05 0 0); /* Even deeper black */
+  --foreground: oklch(0.98 0 0);
+  --card: oklch(0.08 0 0);
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.08 0 0);
+  --popover-foreground: oklch(0.98 0 0);
+  --primary: oklch(0.75 0.15 240);
+  --primary-foreground: oklch(0.05 0 0);
+  --secondary: oklch(0.15 0 0);
+  --secondary-foreground: oklch(0.9 0 0);
+  --muted: oklch(0.12 0 0);
+  --muted-foreground: oklch(0.65 0 0);
+  --accent: oklch(0.18 0 0);
+  --accent-foreground: oklch(0.95 0 0);
+  --destructive: oklch(0.65 0.2 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.2 0 0);
+  --input: oklch(0.15 0 0);
+  --ring: oklch(0.75 0.15 240);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+  --sidebar: oklch(0.05 0 0);
+  --sidebar-foreground: oklch(0.95 0 0);
+  --sidebar-primary: oklch(0.75 0.15 240);
+  --sidebar-primary-foreground: oklch(0.05 0 0);
+  --sidebar-accent: oklch(0.15 0 0);
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --sidebar-border: oklch(0.2 0 0);
+  --sidebar-ring: oklch(0.75 0.15 240);
 }
 
 @theme inline {
@@ -120,12 +122,22 @@
   body {
     @apply bg-background text-foreground;
     /* removed padding-top: 150px to restore original interface positioning */
+    background-color: oklch(0.08 0 0) !important;
+    color: oklch(0.95 0 0) !important;
+  }
+
+  /* Ensure all elements use black theme */
+  html {
+    @apply dark;
+    background-color: oklch(0.08 0 0) !important;
   }
 }
 
 /* Simplified minimal design system */
 .minimal-card {
-  @apply bg-card border border-border rounded-lg p-4 shadow-sm;
+  @apply bg-card border border-border rounded-lg p-4 shadow-lg;
+  background-color: oklch(0.12 0 0) !important;
+  border-color: oklch(0.25 0 0) !important;
 }
 
 .minimal-button {
@@ -134,10 +146,14 @@
 
 .minimal-button-secondary {
   @apply bg-secondary text-secondary-foreground px-4 py-2 rounded-md text-sm font-semibold hover:bg-secondary/80 transition-colors border border-border;
+  background-color: oklch(0.18 0 0) !important;
+  color: oklch(0.85 0 0) !important;
 }
 
 .minimal-input {
   @apply bg-background border-2 border-input rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent;
+  background-color: oklch(0.15 0 0) !important;
+  color: oklch(0.95 0 0) !important;
 }
 
 /* Essential game animations only */
@@ -172,6 +188,9 @@
 /* Game-specific minimal styles */
 .game-cell {
   @apply w-16 h-16 border-2 border-border rounded-md flex items-center justify-center text-lg font-semibold cursor-pointer hover:bg-accent transition-colors;
+  background-color: oklch(0.12 0 0) !important;
+  border-color: oklch(0.25 0 0) !important;
+  color: oklch(0.9 0 0) !important;
 }
 
 .game-cell-active {
