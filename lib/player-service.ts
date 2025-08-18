@@ -178,19 +178,46 @@ export async function updatePlayerCoins(playerId: string, newCoins: number): Pro
   }
 
   try {
-    console.log("Updating player coins:", { playerId, newCoins })
+    console.log("[v0] updatePlayerCoins called with:", { playerId, newCoins })
+
+    // Сначала получим текущий баланс для сравнения
+    const { data: currentPlayer, error: fetchError } = await supabase
+      .from("players")
+      .select("coins")
+      .eq("id", playerId)
+      .single()
+
+    if (fetchError) {
+      console.error("[v0] Error fetching current player coins:", fetchError)
+    } else {
+      console.log("[v0] Current player coins:", currentPlayer?.coins)
+    }
 
     const { error } = await supabase.from("players").update({ coins: newCoins }).eq("id", playerId)
 
     if (error) {
-      console.error("Error updating player coins:", error)
+      console.error("[v0] Error updating player coins:", error)
       return false
     }
 
-    console.log("Successfully updated player coins")
+    // Проверим что баланс действительно обновился
+    const { data: updatedPlayer, error: verifyError } = await supabase
+      .from("players")
+      .select("coins")
+      .eq("id", playerId)
+      .single()
+
+    if (verifyError) {
+      console.error("[v0] Error verifying updated coins:", verifyError)
+    } else {
+      console.log("[v0] Updated player coins:", updatedPlayer?.coins)
+      console.log("[v0] Coins update successful:", updatedPlayer?.coins === newCoins)
+    }
+
+    console.log("[v0] Successfully updated player coins")
     return true
   } catch (error) {
-    console.error("Error in updatePlayerCoins:", error)
+    console.error("[v0] Error in updatePlayerCoins:", error)
     return false
   }
 }
