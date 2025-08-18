@@ -3,7 +3,7 @@
 import { getGameState, updateGameState, createInitialGameState } from "@/lib/game-state"
 import { LEVELS, gridSize } from "@/lib/game-config"
 import { calculateArmoredFeatherProtection } from "@/lib/perks-system"
-import { updatePlayerExperience, updatePlayerCoins, saveGameToHistory } from "@/lib/player-service"
+import { updatePlayerExperience } from "@/lib/player-service"
 import { getLobby } from "@/lib/lobby-store"
 
 // Вспомогательные функции
@@ -38,32 +38,40 @@ export async function initializeGame(lobbyId: string) {
       }
     }
 
-    // Save initial game session to database
     if (hunterPlayerId && duckPlayerId) {
-      console.log("[v0] Creating game session in database:", {
+      console.log("[v0] Creating game session via API:", {
         sessionId: state.sessionId,
         lobbyId,
         hunterPlayerId,
         duckPlayerId,
       })
 
-      await saveGameToHistory({
-        sessionId: state.sessionId,
-        lobbyId,
-        hunterPlayerId,
-        duckPlayerId,
-        winner: "hunter", // Temporary, will be updated when game ends
-        reason: "running",
-        hunterBet: state.hunterBet,
-        duckBet: state.duckBet,
-        hunterCoinsChange: 0,
-        duckCoinsChange: 0,
-        hunterExperienceGained: 0,
-        duckExperienceGained: 0,
-        shotsFired: 0,
-        movesMade: 0,
-        durationSeconds: 0,
-      })
+      try {
+        const response = await fetch("/api/games", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            playerIds: [hunterPlayerId, duckPlayerId],
+            betsCents: [state.hunterBet * 100, state.duckBet * 100], // Convert to cents
+            roles: ["hunter", "duck"],
+            lobbyId,
+            sessionId: state.sessionId,
+          }),
+        })
+
+        if (!response.ok) {
+          console.error("[v0] Failed to create game session:", await response.text())
+        } else {
+          const gameData = await response.json()
+          console.log("[v0] Game session created successfully:", gameData)
+          // Store the game ID in state for later use
+          state.gameId = gameData.id
+        }
+      } catch (error) {
+        console.error("[v0] Error creating game session:", error)
+      }
     }
   }
 
@@ -637,24 +645,38 @@ export async function endGameWithOutcome(
     hunterGoldChange = -currentState.hunterBet
   }
 
-  const newHunterGold = currentState.hunterGold + hunterGoldChange
-  const newDuckGold = currentState.duckGold + duckGoldChange
+  console.log("[v0] Gold changes:", { hunterGoldChange, duckGoldChange })
 
-  console.log("[v0] Gold changes:", { hunterGoldChange, duckGoldChange, newHunterGold, newDuckGold })
+  if (actualHunterPlayerId && actualDuckPlayerId && currentState.gameId) {
+    const winnerId = outcome.winner === "hunter" ? actualHunterPlayerId : actualDuckPlayerId
+    const loserId = outcome.winner === "hunter" ? actualDuckPlayerId : actualHunterPlayerId
 
-  // Сохраняем новый баланс в базу данных
-  if (actualHunterPlayerId) {
-    console.log("[v0] Updating hunter coins:", actualHunterPlayerId, newHunterGold)
-    await updatePlayerCoins(actualHunterPlayerId, newHunterGold)
-  } else {
-    console.log("[v0] No hunterPlayerId available")
-  }
+    console.log("[v0] Ending game via API:", {
+      gameId: currentState.gameId,
+      winnerId,
+      loserId,
+    })
 
-  if (actualDuckPlayerId) {
-    console.log("[v0] Updating duck coins:", actualDuckPlayerId, newDuckGold)
-    await updatePlayerCoins(actualDuckPlayerId, newDuckGold)
-  } else {
-    console.log("[v0] No duckPlayerId available")
+    try {
+      const response = await fetch(`/api/games/${currentState.gameId}/end`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          winnerId,
+          loserId,
+        }),
+      })
+
+      if (!response.ok) {
+        console.error("[v0] Failed to end game session:", await response.text())
+      } else {
+        console.log("[v0] Game session ended successfully")
+      }
+    } catch (error) {
+      console.error("[v0] Error ending game session:", error)
+    }
   }
 
   // Добавление начисления опыта за игру
@@ -673,36 +695,8 @@ export async function endGameWithOutcome(
     await updatePlayerExperience(actualDuckPlayerId, "duck", duckExpGained)
   }
 
-  if (actualHunterPlayerId && actualDuckPlayerId) {
-    const gameStartTime = currentState.gameStartTime || Date.now()
-    const gameDuration = Math.floor((Date.now() - gameStartTime) / 1000)
-
-    console.log("[v0] Updating game session with final results:", {
-      sessionId: currentState.sessionId,
-      winner: outcome.winner,
-      reason: outcome.reason,
-      gameDuration,
-    })
-
-    // Update the existing game session record with final results
-    await saveGameToHistory({
-      sessionId: currentState.sessionId,
-      lobbyId,
-      hunterPlayerId: actualHunterPlayerId,
-      duckPlayerId: actualDuckPlayerId,
-      winner: outcome.winner,
-      reason: outcome.reason,
-      hunterBet: currentState.hunterBet,
-      duckBet: currentState.duckBet,
-      hunterCoinsChange: hunterGoldChange,
-      duckCoinsChange: duckGoldChange,
-      hunterExperienceGained: hunterExpGained,
-      duckExperienceGained: duckExpGained,
-      shotsFired: currentState.shotCells?.length || 0,
-      movesMade: 1, // Simplified move counting
-      durationSeconds: gameDuration,
-    })
-  }
+  const newHunterGold = currentState.hunterGold + hunterGoldChange
+  const newDuckGold = currentState.duckGold + duckGoldChange
 
   const updatedState = updateGameState(lobbyId, {
     outcome,
