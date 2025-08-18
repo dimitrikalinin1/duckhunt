@@ -293,32 +293,38 @@ export async function saveGameToHistory(gameData: {
   }
 
   try {
-    console.log("[v0] Saving game session to history:", gameData)
+    console.log("[v0] Saving/updating game session to history:", gameData)
 
-    const { error } = await supabase.from("game_history").insert({
-      session_id: gameData.sessionId,
-      lobby_id: gameData.lobbyId,
-      hunter_player_id: gameData.hunterPlayerId,
-      duck_player_id: gameData.duckPlayerId,
-      winner: gameData.winner,
-      reason: gameData.reason,
-      hunter_bet: gameData.hunterBet || 0,
-      duck_bet: gameData.duckBet || 0,
-      hunter_coins_change: gameData.hunterCoinsChange,
-      duck_coins_change: gameData.duckCoinsChange,
-      hunter_experience_gained: gameData.hunterExperienceGained,
-      duck_experience_gained: gameData.duckExperienceGained,
-      shots_fired: gameData.shotsFired,
-      moves_made: gameData.movesMade,
-      duration_seconds: gameData.durationSeconds,
-    })
+    const { error } = await supabase.from("game_history").upsert(
+      {
+        session_id: gameData.sessionId,
+        lobby_id: gameData.lobbyId,
+        hunter_player_id: gameData.hunterPlayerId,
+        duck_player_id: gameData.duckPlayerId,
+        winner: gameData.winner,
+        reason: gameData.reason,
+        hunter_bet: gameData.hunterBet || 0,
+        duck_bet: gameData.duckBet || 0,
+        hunter_coins_change: gameData.hunterCoinsChange,
+        duck_coins_change: gameData.duckCoinsChange,
+        hunter_experience_gained: gameData.hunterExperienceGained,
+        duck_experience_gained: gameData.duckExperienceGained,
+        shots_fired: gameData.shotsFired,
+        moves_made: gameData.movesMade,
+        duration_seconds: gameData.durationSeconds,
+        status: gameData.reason === "running" ? "running" : "ended",
+      },
+      {
+        onConflict: "session_id",
+      },
+    )
 
     if (error) {
-      console.error("[v0] Error saving game session to history:", error)
+      console.error("[v0] Error saving/updating game session to history:", error)
       return false
     }
 
-    console.log("[v0] Successfully saved game session to history")
+    console.log("[v0] Successfully saved/updated game session to history")
     return true
   } catch (error) {
     console.error("[v0] Error in saveGameToHistory:", error)

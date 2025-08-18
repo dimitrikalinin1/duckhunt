@@ -1,5 +1,6 @@
 export type GameState = {
   lobbyId: string
+  sessionId: string
   level: number
   activeCells: number[]
   shotCells: number[]
@@ -23,6 +24,7 @@ export type GameState = {
   compassHint?: number[]
   duckSnaredTurns?: number
   notifications?: string[]
+  gameStartTime?: number
   lastAction?: {
     type: string
     playerId: string
@@ -54,6 +56,7 @@ export function updateGameState(lobbyId: string, state: Partial<GameState>): Gam
 export function createInitialGameState(lobbyId: string): GameState {
   return {
     lobbyId,
+    sessionId: crypto.randomUUID(),
     level: 1,
     activeCells: [],
     shotCells: [],
@@ -76,6 +79,7 @@ export function createInitialGameState(lobbyId: string): GameState {
     binocularUsedThisTurn: false,
     compassHint: [],
     duckSnaredTurns: 0,
+    gameStartTime: Date.now(),
     playerLevels: {
       hunter: 1,
       duck: 1,
