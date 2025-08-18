@@ -5,6 +5,7 @@ import { Telescope, ArrowLeft, Volume2, VolumeX, Coins, X } from "lucide-react"
 import GameBoard, { type CellOverlay } from "./game-board"
 import { useSound } from "use-sound"
 import type { PlayerCharacter } from "@/lib/ai-opponent"
+import { usePlayer } from "@/contexts/player-context"
 import {
   getGameStateAction,
   makeDuckInitialMove,
@@ -19,7 +20,7 @@ type Props = {
   onBackToMenu: () => void
   isMultiplayer?: boolean
   lobbyId?: string | null
-  playerId?: string
+  playerId?: string | null
 }
 
 function GameResultModal({
@@ -127,14 +128,16 @@ export default function GameSession({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showResultModal, setShowResultModal] = useState(false)
+  const { refreshPlayer } = usePlayer()
 
   const [play] = useSound("/sounds/shot.mp3", { volume: soundEnabled ? 0.5 : 0 })
 
   useEffect(() => {
     if (gameState?.outcome && !showResultModal) {
       setShowResultModal(true)
+      refreshPlayer()
     }
-  }, [gameState?.outcome, showResultModal])
+  }, [gameState?.outcome, showResultModal, refreshPlayer])
 
   const handleCellClick = useCallback(
     async (cellIndex: number) => {
