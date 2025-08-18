@@ -5,27 +5,22 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-black tracking-wide transition-all duration-300 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background border-2 shadow-xl hover:shadow-2xl transform-gpu",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
   {
     variants: {
       variant: {
-        default:
-          "bg-gradient-to-r from-primary to-secondary text-primary-foreground border-primary/30 shadow-primary/30 hover:from-primary/90 hover:to-secondary/90 hover:scale-105 hover:shadow-primary/50 active:scale-95 hover:border-primary/50",
-        destructive:
-          "bg-gradient-to-r from-destructive to-destructive/80 text-destructive-foreground border-destructive/30 shadow-destructive/30 hover:from-destructive/90 hover:to-destructive/70 hover:scale-105 hover:shadow-destructive/50 active:scale-95 hover:border-destructive/50",
-        outline:
-          "border-2 border-border bg-gradient-to-br from-background/80 to-muted/50 text-foreground shadow-border/20 hover:bg-gradient-to-br hover:from-accent/20 hover:to-secondary/10 hover:text-accent-foreground hover:scale-105 hover:border-accent/50 active:scale-95 backdrop-blur-sm",
-        secondary:
-          "bg-gradient-to-r from-secondary to-accent text-secondary-foreground border-secondary/30 shadow-secondary/30 hover:from-secondary/90 hover:to-accent/90 hover:scale-105 hover:shadow-secondary/50 active:scale-95 hover:border-secondary/50",
-        ghost:
-          "text-foreground border-transparent hover:bg-gradient-to-br hover:from-accent/20 hover:to-primary/10 hover:text-accent-foreground hover:scale-105 hover:border-accent/30 active:scale-95 backdrop-blur-sm",
-        link: "text-primary underline-offset-4 hover:underline hover:text-secondary border-transparent shadow-none hover:shadow-none",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        outline: "border border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        ghost: "text-foreground hover:bg-accent hover:text-accent-foreground",
+        link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-12 px-8 py-3 has-[>svg]:px-6 text-base",
-        sm: "h-10 rounded-lg gap-1.5 px-6 has-[>svg]:px-4 text-sm",
-        lg: "h-14 rounded-xl px-10 has-[>svg]:px-8 text-lg font-black",
-        icon: "size-12 rounded-xl",
+        default: "h-10 px-4 py-2",
+        sm: "h-8 rounded-md px-3 text-xs",
+        lg: "h-12 rounded-md px-8 text-base",
+        icon: "h-10 w-10",
       },
     },
     defaultVariants: {

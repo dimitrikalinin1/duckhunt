@@ -4,66 +4,66 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Updated to monochrome color scheme with touch-friendly sizing */
-  --background: #000000; /* Pure Black */
-  --foreground: #ffffff; /* Pure White */
-  --card: #1a1a1a; /* Dark Gray */
-  --card-foreground: #ffffff; /* Pure White */
-  --popover: #1a1a1a; /* Dark Gray */
-  --popover-foreground: #ffffff; /* Pure White */
-  --primary: #ffffff; /* White for primary actions */
-  --primary-foreground: #000000; /* Black text on white */
-  --secondary: #333333; /* Medium Gray */
-  --secondary-foreground: #ffffff; /* White text */
-  --muted: #2a2a2a; /* Muted Gray */
-  --muted-foreground: #cccccc; /* Light Gray text */
-  --accent: #666666; /* Accent Gray */
-  --accent-foreground: #ffffff; /* White text */
-  --destructive: #ffffff; /* White for destructive actions */
-  --destructive-foreground: #000000; /* Black text */
-  --border: #333333; /* Gray borders */
-  --input: #1a1a1a; /* Dark input background */
-  --ring: rgba(255, 255, 255, 0.3); /* White ring */
-  --radius: 0.75rem; /* Larger radius for touch */
-  --sidebar: #1a1a1a;
-  --sidebar-foreground: #ffffff;
-  --sidebar-primary: #ffffff;
-  --sidebar-primary-foreground: #000000;
-  --sidebar-accent: #666666;
+  /* Updated to design brief color scheme with cyan-orange palette */
+  --background: #ffffff; /* White background */
+  --foreground: #475569; /* Slate-600 for main text */
+  --card: #ecfeff; /* Cyan-50 for cards */
+  --card-foreground: #164e63; /* Cyan-800 for card text */
+  --popover: #ffffff; /* White for popovers */
+  --popover-foreground: #475569; /* Slate-600 for popover text */
+  --primary: #164e63; /* Cyan-800 primary color */
+  --primary-foreground: #ffffff; /* White text on primary */
+  --secondary: #ea580c; /* Orange-600 secondary color */
+  --secondary-foreground: #ffffff; /* White text on secondary */
+  --muted: #ecfeff; /* Cyan-50 for muted elements */
+  --muted-foreground: #4b5563; /* Gray-600 for muted text */
+  --accent: #ea580c; /* Orange-600 accent color */
+  --accent-foreground: #ffffff; /* White text on accent */
+  --destructive: #ff0000; /* Red for destructive actions */
+  --destructive-foreground: #ffffff; /* White text on destructive */
+  --border: #475569; /* Slate-600 for borders */
+  --input: #ffffff; /* White input background */
+  --ring: #ea580c; /* Orange-600 for focus rings */
+  --radius: 0.5rem; /* 8px border radius */
+  --sidebar: #ecfeff;
+  --sidebar-foreground: #475569;
+  --sidebar-primary: #164e63;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ea580c;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #333333;
-  --sidebar-ring: rgba(255, 255, 255, 0.3);
+  --sidebar-border: #475569;
+  --sidebar-ring: #ea580c;
 }
 
 .dark {
-  /* Same monochrome values for consistency */
-  --background: #000000;
-  --foreground: #ffffff;
-  --card: #1a1a1a;
-  --card-foreground: #ffffff;
-  --popover: #1a1a1a;
-  --popover-foreground: #ffffff;
-  --primary: #ffffff;
-  --primary-foreground: #000000;
-  --secondary: #333333;
+  /* Same colors for consistency in dark mode */
+  --background: #ffffff;
+  --foreground: #475569;
+  --card: #ecfeff;
+  --card-foreground: #164e63;
+  --popover: #ffffff;
+  --popover-foreground: #475569;
+  --primary: #164e63;
+  --primary-foreground: #ffffff;
+  --secondary: #ea580c;
   --secondary-foreground: #ffffff;
-  --muted: #2a2a2a;
-  --muted-foreground: #cccccc;
-  --accent: #666666;
+  --muted: #ecfeff;
+  --muted-foreground: #4b5563;
+  --accent: #ea580c;
   --accent-foreground: #ffffff;
-  --destructive: #ffffff;
-  --destructive-foreground: #000000;
-  --border: #333333;
-  --input: #1a1a1a;
-  --ring: rgba(255, 255, 255, 0.3);
-  --sidebar: #1a1a1a;
-  --sidebar-foreground: #ffffff;
-  --sidebar-primary: #ffffff;
-  --sidebar-primary-foreground: #000000;
-  --sidebar-accent: #666666;
+  --destructive: #ff0000;
+  --destructive-foreground: #ffffff;
+  --border: #475569;
+  --input: #ffffff;
+  --ring: #ea580c;
+  --sidebar: #ecfeff;
+  --sidebar-foreground: #475569;
+  --sidebar-primary: #164e63;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ea580c;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #333333;
-  --sidebar-ring: rgba(255, 255, 255, 0.3);
+  --sidebar-border: #475569;
+  --sidebar-ring: #ea580c;
 }
 
 @theme inline {
@@ -106,20 +106,20 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Updated typography for better readability and touch interaction */
+    /* Updated typography for minimalist design */
     font-family: "Inter", system-ui, sans-serif;
-    font-size: 16px;
-    line-height: 1.6;
+    font-size: 14px;
+    line-height: 1.5;
   }
 
   html {
-    /* Pure black background */
-    background-color: #000000;
+    /* Clean white background */
+    background-color: #ffffff;
   }
 }
 
-/* Touch-friendly components with minimum 40px touch targets */
-.touch-button {
+/* Simplified minimal components without complex effects */
+.minimal-button {
   background: var(--primary);
   color: var(--primary-foreground);
   border: 1px solid var(--border);
@@ -129,83 +129,51 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-height: 40px;
-  min-width: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
 }
 
-.touch-button:hover {
-  background: var(--accent);
-  color: var(--accent-foreground);
-  transform: scale(1.02);
-}
-
-.touch-button:active {
-  transform: scale(0.98);
-}
-
-.touch-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1rem;
-  margin: 0.5rem;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  min-height: 40px;
-}
-
-.touch-card:hover {
-  border-color: var(--primary);
-  background: var(--muted);
-}
-
-.touch-card:active {
-  transform: scale(0.98);
-}
-
-/* Touch-friendly components with minimum 40px touch targets */
-.material-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  transition: box-shadow 0.2s ease;
-}
-
-.material-card:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-}
-
-.material-button {
+.minimal-button:hover {
   background: var(--primary);
-  color: var(--primary-foreground);
-  border: none;
+  opacity: 0.9;
+}
+
+.minimal-button-secondary {
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 0.75rem 1.5rem;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
-.material-button:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  transform: translateY(-1px);
-}
-
-.material-button-secondary {
+.minimal-button-secondary:hover {
   background: var(--secondary);
-  color: var(--secondary-foreground);
-  border: 1px solid var(--border);
+  opacity: 0.9;
 }
 
-/* Larger game cells for better touch interaction */
+.minimal-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  transition: all 0.2s ease;
+}
+
+.minimal-card:hover {
+  border-color: var(--primary);
+}
+
+/* Clean game cells without complex styling */
 .game-cell {
   width: 3rem;
   height: 3rem;
@@ -228,10 +196,6 @@
   border-color: var(--primary);
 }
 
-.game-cell:active {
-  transform: scale(0.95);
-}
-
 .game-cell-active {
   background: var(--primary);
   color: var(--primary-foreground);
@@ -248,112 +212,10 @@
   background: var(--accent);
   color: var(--accent-foreground);
   border-color: var(--accent);
-  border-width: 3px;
+  border-width: 2px;
 }
 
-/* Simplified monochrome buttons with touch-friendly sizing */
-.game-button {
-  background: var(--primary);
-  color: var(--primary-foreground);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.75rem 1.5rem;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin: 0.25rem;
-}
-
-.game-button:hover {
-  background: var(--accent);
-  color: var(--accent-foreground);
-  transform: scale(1.02);
-}
-
-.game-button:active {
-  transform: scale(0.98);
-}
-
-.game-button-secondary {
-  background: var(--secondary);
-  color: var(--secondary-foreground);
-  border: 1px solid var(--border);
-}
-
-.game-button-secondary:hover {
-  background: var(--muted);
-  border-color: var(--primary);
-}
-
-/* Simplified cards with better spacing for touch */
-.game-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1rem;
-  margin: 0.5rem;
-  transition: all 0.2s ease;
-}
-
-.game-panel {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1rem;
-  margin: 0.5rem;
-}
-
-/* Touch-optimized role selection */
-.role-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.5rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-height: 160px;
-  margin: 0.5rem;
-}
-
-.role-card:hover {
-  border-color: var(--primary);
-  background: var(--muted);
-  transform: scale(1.02);
-}
-
-.role-card:active {
-  transform: scale(0.98);
-}
-
-.role-scroll-container {
-  display: flex;
-  gap: 1rem;
-  overflow-x: auto;
-  padding: 1rem;
-  scroll-snap-type: x mandatory;
-  scroll-behavior: smooth;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.role-scroll-container::-webkit-scrollbar {
-  display: none;
-}
-
-.role-scroll-item {
-  flex-shrink: 0;
-  width: 280px;
-  max-width: 80vw;
-  scroll-snap-align: center;
-}
-
-/* Simplified typography for better readability */
+/* Minimal typography classes */
 .minimal-text {
   font-size: 14px;
   line-height: 1.5;
@@ -361,7 +223,7 @@
 }
 
 .minimal-title {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 600;
   color: var(--foreground);
   line-height: 1.3;
@@ -376,7 +238,7 @@
   margin-bottom: 0.5rem;
 }
 
-/* Minimal animations only */
+/* Simple fade animation only */
 @keyframes fade-in {
   from {
     opacity: 0;
