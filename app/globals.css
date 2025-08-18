@@ -4,76 +4,66 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Updated to Figma Game UI Wireframe Kit color scheme */
-  --background: #1f2937; /* Dark Gray */
+  /* Updated to Material Dark Theme with minimalist approach */
+  --background: #121212; /* Dark Gray */
   --foreground: #ffffff; /* White */
-  --card: rgba(31, 41, 55, 0.8); /* Semi-transparent dark */
+  --card: #1e1e1e; /* Dark Charcoal */
   --card-foreground: #ffffff; /* White */
-  --popover: rgba(31, 41, 55, 0.9); /* Darker overlay */
+  --popover: #1e1e1e; /* Dark Charcoal */
   --popover-foreground: #ffffff; /* White */
-  --primary: #15803d; /* Green */
-  --primary-foreground: #ffffff; /* White */
-  --secondary: #84cc16; /* Bright Green */
-  --secondary-foreground: #1f2937; /* Dark Gray */
-  --muted: rgba(255, 255, 255, 0.7); /* Muted White */
-  --muted-foreground: #1f2937; /* Dark Gray */
-  --accent: #ff3d00; /* Neon Orange */
-  --accent-foreground: #ffffff; /* White */
-  --destructive: #e53e3e; /* Red for destructive actions */
+  --primary: #ffab00; /* Amber */
+  --primary-foreground: #121212; /* Dark Gray */
+  --secondary: #1e1e1e; /* Dark Charcoal */
+  --secondary-foreground: #ffffff; /* White */
+  --muted: #1e1e1e; /* Dark Charcoal */
+  --muted-foreground: #ffffff; /* White */
+  --accent: #ffab00; /* Amber */
+  --accent-foreground: #121212; /* Dark Gray */
+  --destructive: #d32f2f; /* Red for destructive actions */
   --destructive-foreground: #ffffff; /* White */
-  --border: #4b5563; /* Dark border */
-  --input: #374151; /* Dark Input Field */
-  --ring: #84cc16; /* Bright Green for focus states */
-  --chart-1: #15803d; /* Green for charts */
-  --chart-2: #ff3d00; /* Neon Orange for charts */
-  --chart-3: #84cc16; /* Bright Green for charts */
-  --chart-4: #ffffff; /* White for charts */
-  --chart-5: #374151; /* Dark Gray for charts */
+  --border: #424242; /* Dark Gray Border */
+  --input: #1e1e1e; /* Dark Charcoal */
+  --ring: rgba(255, 171, 0, 0.5); /* Amber Ring */
   --radius: 0.5rem; /* Rounded corners */
-  --sidebar: #1f2937; /* Sidebar background */
-  --sidebar-foreground: #ffffff; /* Sidebar text */
-  --sidebar-primary: #15803d; /* Sidebar primary action */
-  --sidebar-primary-foreground: #ffffff; /* Sidebar primary action text */
-  --sidebar-accent: #ff3d00; /* Sidebar accent color */
-  --sidebar-accent-foreground: #ffffff; /* Sidebar accent text */
-  --sidebar-border: #4b5563; /* Sidebar border */
-  --sidebar-ring: #84cc16; /* Sidebar focus ring */
+  --sidebar: #1e1e1e; /* Dark Charcoal Sidebar */
+  --sidebar-foreground: #ffffff; /* White */
+  --sidebar-primary: #ffab00; /* Amber for primary action */
+  --sidebar-primary-foreground: #121212; /* Dark Gray */
+  --sidebar-accent: #ffab00; /* Amber */
+  --sidebar-accent-foreground: #121212; /* Dark Gray */
+  --sidebar-border: #424242; /* Dark Gray Border */
+  --sidebar-ring: rgba(255, 171, 0, 0.5); /* Amber Ring */
 }
 
 .dark {
-  /* Updated dark mode to match Figma game UI theme */
-  --background: #1f2937;
+  /* Same Material Dark Theme values for consistency */
+  --background: #121212;
   --foreground: #ffffff;
-  --card: rgba(31, 41, 55, 0.8);
+  --card: #1e1e1e;
   --card-foreground: #ffffff;
-  --popover: rgba(31, 41, 55, 0.9);
+  --popover: #1e1e1e;
   --popover-foreground: #ffffff;
-  --primary: #15803d;
-  --primary-foreground: #ffffff;
-  --secondary: #84cc16;
-  --secondary-foreground: #1f2937;
-  --muted: rgba(255, 255, 255, 0.7);
-  --muted-foreground: #1f2937;
-  --accent: #ff3d00;
-  --accent-foreground: #ffffff;
-  --destructive: #e53e3e;
+  --primary: #ffab00;
+  --primary-foreground: #121212;
+  --secondary: #1e1e1e;
+  --secondary-foreground: #ffffff;
+  --muted: #1e1e1e;
+  --muted-foreground: #ffffff;
+  --accent: #ffab00;
+  --accent-foreground: #121212;
+  --destructive: #d32f2f;
   --destructive-foreground: #ffffff;
-  --border: #4b5563;
-  --input: #374151;
-  --ring: #84cc16;
-  --chart-1: #15803d;
-  --chart-2: #ff3d00;
-  --chart-3: #84cc16;
-  --chart-4: #ffffff;
-  --chart-5: #374151;
-  --sidebar: #1f2937;
+  --border: #424242;
+  --input: #1e1e1e;
+  --ring: rgba(255, 171, 0, 0.5);
+  --sidebar: #1e1e1e;
   --sidebar-foreground: #ffffff;
-  --sidebar-primary: #15803d;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #ff3d00;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #4b5563;
-  --sidebar-ring: #84cc16;
+  --sidebar-primary: #ffab00;
+  --sidebar-primary-foreground: #121212;
+  --sidebar-accent: #ffab00;
+  --sidebar-accent-foreground: #121212;
+  --sidebar-border: #424242;
+  --sidebar-ring: rgba(255, 171, 0, 0.5);
 }
 
 @theme inline {
@@ -96,11 +86,6 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -121,145 +106,119 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Updated to use DM Sans font family for game UI */
-    font-family: "DM Sans", "Work Sans", system-ui, sans-serif;
+    /* Updated typography for Material Design with smaller fonts */
+    font-family: "DM Sans", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
   }
 
   html {
-    /* Updated to use semantic background token */
-    background-color: var(--background);
+    /* Updated to Material Dark background */
+    background-color: #121212;
   }
 }
 
-/* Simplified minimal design system */
-.minimal-card {
-  @apply bg-card border border-border rounded-xl p-6 shadow-2xl;
-  background: linear-gradient(135deg, var(--card) 0%, rgba(31, 41, 55, 0.6) 100%);
-  border-color: var(--border);
-  backdrop-filter: blur(8px);
+/* Material Design components with elevation shadows */
+.material-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: box-shadow 0.2s ease;
 }
 
-.minimal-button {
-  @apply bg-gradient-to-r from-primary to-secondary text-primary-foreground px-6 py-3 rounded-xl text-sm font-black tracking-wide hover:opacity-90 transition-all duration-300 border-2 border-primary/30 shadow-xl hover:shadow-2xl hover:scale-105;
+.material-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
-.minimal-button-secondary {
-  @apply bg-gradient-to-r from-secondary to-accent text-secondary-foreground px-6 py-3 rounded-xl text-sm font-black tracking-wide hover:opacity-90 transition-all duration-300 border-2 border-secondary/30 shadow-xl hover:shadow-2xl hover:scale-105;
+.material-button {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.75rem 1.5rem;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.minimal-input {
-  @apply bg-input border-2 border-border rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring/50 transition-all duration-200 shadow-lg;
-  background-color: var(--input);
+.material-button:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+.material-button-secondary {
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+  border: 1px solid var(--border);
+}
+
+.minimal-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+
+.minimal-title {
+  font-size: 20px;
+  font-weight: 600;
   color: var(--foreground);
+  line-height: 1.3;
+  font-family: "Space Grotesk", system-ui, sans-serif;
 }
 
-/* Essential game animations only */
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+.minimal-subtitle {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  line-height: 1.4;
 }
 
-@keyframes slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.3s ease-out;
-}
-
-.animate-slide-up {
-  animation: slide-up 0.4s ease-out;
-}
-
-/* Game-specific minimal styles */
+/* Simplified game components with Material Design elevation */
 .game-cell {
-  @apply w-16 h-16 border-2 border-border rounded-md flex items-center justify-center text-lg font-semibold cursor-pointer hover:bg-accent transition-colors;
-  background-color: #1c1c1e !important;
-  border-color: #475569 !important;
-  color: #059669 !important;
+  width: 3rem;
+  height: 3rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.game-cell:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .game-cell-active {
-  @apply bg-primary text-primary-foreground border-primary;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
 }
 
 .game-cell-shot {
-  @apply bg-destructive/20 border-destructive/50 text-destructive-foreground;
+  background: var(--destructive);
+  color: var(--destructive-foreground);
+  border-color: var(--destructive);
 }
 
 .game-cell-duck {
-  @apply bg-accent border-primary border-2 text-primary;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-color: var(--accent);
+  border-width: 2px;
 }
 
-/* Existing essential game animations preserved */
-@keyframes shotRing {
-  0% {
-    transform: scale(0.4);
-    opacity: 0.5;
-  }
-  60% {
-    transform: scale(1.1);
-    opacity: 0.25;
-  }
-  100% {
-    transform: scale(1.35);
-    opacity: 0;
-  }
-}
-
-@keyframes smokePuff {
-  0% {
-    transform: translateY(2px) scale(0.8);
-    filter: blur(0px);
-    opacity: 0.85;
-  }
-  50% {
-    transform: translateY(-6px) scale(1);
-    filter: blur(0.5px);
-    opacity: 0.6;
-  }
-  100% {
-    transform: translateY(-14px) scale(1.05);
-    filter: blur(1px);
-    opacity: 0;
-  }
-}
-
-.shot-ring {
-  position: absolute;
-  height: 3.25rem;
-  width: 3.25rem;
-  border-radius: 9999px;
-  background: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.06) 40%, transparent 60%);
-  animation: shotRing 750ms ease-out forwards;
-}
-
-.shot-smoke {
-  position: absolute;
-  height: 2.25rem;
-  width: 2.25rem;
-  border-radius: 9999px;
-  background: radial-gradient(
-    circle at 40% 35%,
-    rgba(200, 200, 200, 0.7),
-    rgba(200, 200, 200, 0.4) 50%,
-    rgba(200, 200, 200, 0) 70%
-  );
-  animation: smokePuff 900ms ease-out forwards;
-}
-
-/* Game-specific UI components with Figma game UI styling */
 .game-button {
   @apply bg-gradient-to-r from-primary to-secondary text-primary-foreground px-8 py-4 rounded-xl text-lg font-black tracking-wide hover:from-primary/90 hover:to-secondary/90 transition-all duration-300 border-2 border-primary/30 shadow-2xl hover:shadow-primary/50 transform hover:scale-105 max-w-full;
 }
@@ -291,29 +250,27 @@
 }
 
 .role-card {
-  background: linear-gradient(135deg, var(--card) 0%, rgba(31, 41, 55, 0.6) 100%);
-  border: 2px solid var(--border);
-  border-radius: 1rem;
-  padding: 2rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
-  max-width: 100%;
-  overflow: hidden;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  max-width: 100%;
 }
 
 .role-card:hover {
   border-color: var(--primary);
-  box-shadow: 0 25px 50px -12px rgba(21, 128, 61, 0.3);
-  transform: scale(1.02);
+  box-shadow: 0 4px 8px rgba(255, 171, 0, 0.2);
+  transform: translateY(-2px);
 }
 
 .role-scroll-container {
   display: flex;
   gap: 1rem;
   overflow-x: auto;
-  padding-bottom: 1rem;
+  padding: 1rem 0;
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
   -ms-overflow-style: none;
@@ -325,60 +282,37 @@
 }
 
 .role-scroll-item {
-  /* Fixed concatenated classes by adding proper space between max-w-[90vw] and snap-center */
   flex-shrink: 0;
-  width: 320px;
-  max-width: 90vw;
+  width: 280px;
+  max-width: 85vw;
   scroll-snap-align: center;
 }
 
-/* Game-specific animations with enhanced effects */
-@keyframes glow-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 20px rgba(21, 128, 61, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 40px rgba(21, 128, 61, 0.8);
-  }
-}
-
-.animate-glow-pulse {
-  animation: glow-pulse 2s ease-in-out infinite;
-}
-
-@keyframes float-gentle {
-  0%,
-  100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-12px);
-  }
-}
-
-.animate-float-gentle {
-  animation: float-gentle 4s ease-in-out infinite;
-}
-
-@keyframes bounce-in {
-  0% {
+/* Minimal animations only */
+@keyframes fade-in {
+  from {
     opacity: 0;
-    transform: scale(0.3);
   }
-  50% {
+  to {
     opacity: 1;
-    transform: scale(1.05);
-  }
-  70% {
-    transform: scale(0.9);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
   }
 }
 
-.animate-bounce-in {
-  animation: bounce-in 0.6s ease-out;
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
 }
