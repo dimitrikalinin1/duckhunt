@@ -4,6 +4,7 @@ import { getGameState, updateGameState, createInitialGameState } from "@/lib/gam
 import { LEVELS, gridSize } from "@/lib/game-config"
 import { calculateArmoredFeatherProtection } from "@/lib/perks-system"
 import { updatePlayerExperience, saveGameHistory, updatePlayerCoins } from "@/lib/player-service"
+import { getLobby } from "@/lib/lobby-store"
 
 // Вспомогательные функции
 function sample<T>(arr: T[]) {
@@ -551,9 +552,29 @@ export async function endGameWithOutcome(
   hunterPlayerId?: string,
   duckPlayerId?: string,
 ) {
+  console.log("[v0] endGameWithOutcome called with:", { lobbyId, outcome, hunterPlayerId, duckPlayerId })
+
   const currentState = getGameState(lobbyId)
   if (!currentState) {
     return { success: false, error: "Game not found" }
+  }
+
+  const lobby = getLobby(lobbyId)
+  let actualHunterPlayerId = hunterPlayerId
+  let actualDuckPlayerId = duckPlayerId
+
+  if (lobby && (!actualHunterPlayerId || !actualDuckPlayerId)) {
+    console.log("[v0] Getting player IDs from lobby:", lobby.players)
+
+    for (const player of lobby.players) {
+      if (player.role === "hunter" && !actualHunterPlayerId) {
+        actualHunterPlayerId = player.id
+      } else if (player.role === "duck" && !actualDuckPlayerId) {
+        actualDuckPlayerId = player.id
+      }
+    }
+
+    console.log("[v0] Resolved player IDs:", { actualHunterPlayerId, actualDuckPlayerId })
   }
 
   let hunterGoldChange = 0
@@ -577,12 +598,21 @@ export async function endGameWithOutcome(
   const newHunterGold = currentState.hunterGold + hunterGoldChange
   const newDuckGold = currentState.duckGold + duckGoldChange
 
+  console.log("[v0] Gold changes:", { hunterGoldChange, duckGoldChange, newHunterGold, newDuckGold })
+
   // Сохраняем новый баланс в базу данных
-  if (hunterPlayerId) {
-    await updatePlayerCoins(hunterPlayerId, newHunterGold)
+  if (actualHunterPlayerId) {
+    console.log("[v0] Updating hunter coins:", actualHunterPlayerId, newHunterGold)
+    await updatePlayerCoins(actualHunterPlayerId, newHunterGold)
+  } else {
+    console.log("[v0] No hunterPlayerId available")
   }
-  if (duckPlayerId) {
-    await updatePlayerCoins(duckPlayerId, newDuckGold)
+
+  if (actualDuckPlayerId) {
+    console.log("[v0] Updating duck coins:", actualDuckPlayerId, newDuckGold)
+    await updatePlayerCoins(actualDuckPlayerId, newDuckGold)
+  } else {
+    console.log("[v0] No duckPlayerId available")
   }
 
   // Добавление начисления опыта за игру
@@ -591,23 +621,23 @@ export async function endGameWithOutcome(
   let hunterExpGained = 0
   let duckExpGained = 0
 
-  if (hunterPlayerId) {
+  if (actualHunterPlayerId) {
     hunterExpGained = outcome.winner === "hunter" ? baseExperience + winnerBonus : baseExperience
-    await updatePlayerExperience(hunterPlayerId, "hunter", hunterExpGained)
+    await updatePlayerExperience(actualHunterPlayerId, "hunter", hunterExpGained)
   }
 
-  if (duckPlayerId) {
+  if (actualDuckPlayerId) {
     duckExpGained = outcome.winner === "duck" ? baseExperience + winnerBonus : baseExperience
-    await updatePlayerExperience(duckPlayerId, "duck", duckExpGained)
+    await updatePlayerExperience(actualDuckPlayerId, "duck", duckExpGained)
   }
 
-  if (hunterPlayerId && duckPlayerId) {
+  if (actualHunterPlayerId && actualDuckPlayerId) {
     const gameStartTime = currentState.lastAction?.timestamp || Date.now()
     const gameDuration = Math.floor((Date.now() - gameStartTime) / 1000)
 
     await saveGameHistory({
-      hunterPlayerId,
-      duckPlayerId,
+      hunterPlayerId: actualHunterPlayerId,
+      duckPlayerId: actualDuckPlayerId,
       winnerRole: outcome.winner,
       gameDuration,
       hunterShots: currentState.shotCells?.length || 0,
